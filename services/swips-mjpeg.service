@@ -1,0 +1,14 @@
+[Unit]
+Description=SWiPS MJPEG Bridge (lag-free video)
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/swips_project
+ExecStart=/home/pi/swips_env/bin/python3 /home/pi/swips_project/mjpeg_bridge.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

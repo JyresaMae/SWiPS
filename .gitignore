@@ -1,0 +1,22 @@
+﻿# Python
+__pycache__/
+*.pyc
+*.pyo
+swips_env/
+
+# Node
+node_modules/
+npm-debug.log
+
+# Logs
+*.log
+nohup.out
+
+# Backup files
+*.bak
+*.bak.*
+*.backup*
+
+# OS
+.DS_Store
+Thumbs.db

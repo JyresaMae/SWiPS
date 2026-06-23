@@ -1,0 +1,10 @@
+{
+  "name": "smart-crosswalk-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal, modern smart crosswalk control-center dashboard UI.",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
+

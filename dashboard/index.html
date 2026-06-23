@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>SWiPS – Smart Crosswalk Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./assets/js/lucide.min.js"></script>
+  <script src="https://jsmpeg.com/jsmpeg.min.js"></script>
+  <!-- GSAP for Animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen" class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="./SWiPS logo.png" alt="SWiPS Logo" class="login-logo" />
+        <h2 class="login-title">Smart Crosswalk Dashboard</h2>
+        <p class="login-subtitle">Sign in to access live monitoring</p>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="email">Email or Username</label>
+          <div class="input-wrapper">
+            <i data-lucide="mail" class="input-icon"></i>
+            <input type="text" id="email" placeholder="admin@swips.edu.ph" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <i data-lucide="lock" class="input-icon"></i>
+            <input type="password" id="password" placeholder="••••••••" required />
+            <button type="button" id="togglePassword" class="password-toggle">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rememberMe" />
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <div id="loginError" class="login-error" style="display: none;">
+          <i data-lucide="alert-circle"></i>
+          <span>Invalid credentials. Please try again.</span>
+        </div>
+
+        <button type="submit" id="loginBtn" class="login-btn">
+          <span class="btn-text">Sign In</span>
+          <div class="spinner"></div>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p>© 2026 SWiPS</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-layout" style="display: none; opacity: 0;">
+    <!-- Sidebar Navigation -->
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <img src="./SWiPS logo.png" alt="SWiPS Logo" class="logo-image" />
+        <span class="logo-text">SWiPS</span>
+      </div>
+
+      <div class="sidebar-nav">
+        <!-- Dashboard (Active) -->
+        <button class="sidebar-item active" data-section="dashboard">
+          <i data-lucide="layout-dashboard" class="sidebar-icon"></i>
+          <span class="sidebar-label">Dashboard</span>
+        </button>
+
+        <!-- Live Camera Feed -->
+        <button class="sidebar-item" data-section="livecam">
+          <i data-lucide="video" class="sidebar-icon"></i>
+          <span class="sidebar-label">Live Camera Feed</span>
+        </button>
+
+        <!-- Pedestrian Analytics -->
+        <button class="sidebar-item" data-section="analytics">
+          <i data-lucide="trending-up" class="sidebar-icon"></i>
+          <span class="sidebar-label">Pedestrian Analytics</span>
+          
+        </button>
+
+        <!-- Alert & Risk Reports -->
+        <button class="sidebar-item" data-section="alerts" id="navAlerts">
+          <i data-lucide="alert-triangle" class="sidebar-icon"></i>
+          <span class="sidebar-label">Alert & Risk Reports</span>
+          <span class="sidebar-badge badge-red" id="badgeAlerts" style="display: none;">0</span>
+        </button>
+
+        <!-- System Performance -->
+        <button class="sidebar-item" data-section="performance">
+          <i data-lucide="activity" class="sidebar-icon"></i>
+          <span class="sidebar-label">System Performance</span>
+          <span class="status-dot-sidebar" id="statusPerformance"></span>
+        </button>
+
+        <!-- Deployment Impact -->
+        <button class="sidebar-item" data-section="compliance" style="display:none;">
+          <i data-lucide="check-circle-2" class="sidebar-icon"></i>
+          <span class="sidebar-label">Deployment Impact</span>
+        </button>
+
+        <!-- Deployment Map -->
+        <button class="sidebar-item" data-section="map">
+          <i data-lucide="map-pin" class="sidebar-icon"></i>
+          <span class="sidebar-label">Deployment Map</span>
+        </button>
+
+        <!-- About SWiPS -->
+        <button class="sidebar-item" data-section="about">
+          <i data-lucide="info" class="sidebar-icon"></i>
+          <span class="sidebar-label">About SWiPS</span>
+        </button>
+
+        <div class="sidebar-separator"></div>
+
+        <!-- Settings -->
+        <button class="sidebar-item" data-section="settings">
+          <i data-lucide="settings" class="sidebar-icon"></i>
+          <span class="sidebar-label">Settings</span>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar">AD</div>
+          <div class="user-info">
+            <div class="user-name">Admin User</div>
+            <div class="user-role">System Admin</div>
+          </div>
+          <button id="logoutBtn" class="logout-btn" title="Sign Out">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <div class="dashboard-container">
+
+        <!-- VIEW: DASHBOARD (Default) -->
+        <div id="view-dashboard" class="view-section active">
+          <!-- 1. Minimalist Header -->
+          <header class="app-header anim-element">
+            <div class="header-left">
+              <h1 class="app-title">Live Monitoring</h1>
+              <p class="app-subtitle">Real-time Crosswalk Status</p>
+            </div>
+            <div class="header-right">
+              <div class="live-indicator" id="liveIndicator">
+                <div class="pulse-dot"></div>
+                <span>LIVE</span>
+              </div>
+              <div class="datetime" id="headerDatetime">Thu 11:04:29 AM</div>
+            </div>
+          </header>
+
+          <!-- 2. Primary Metrics Row -->
+          <section class="metrics-primary">
+            <!-- State Card -->
+            <div class="metric-card anim-element">
+              <span class="metric-label">Crosswalk State</span>
+              <div class="metric-row">
+                <div class="state-dot" id="stateDot"></div>
+                <span class="metric-value-lg" id="crosswalkState">IDLE</span>
+              </div>
+              <span class="metric-context" id="stateTimer">00:00</span>
+            </div>
+
+
+            <!-- Latency Card -->
+            <div class="metric-card anim-element">
+              <span class="metric-label">Latency</span>
+              <div class="metric-row">
+                <span class="metric-value-lg" id="latencyValue">49</span>
+                <span class="unit">ms</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="latencyBar" style="width: 20%"></div>
+              </div>
+              <span class="metric-context">80% below target</span>
+            </div>
+
+            <!-- Alerts Card -->
+            <div class="metric-card anim-element">
+              <span class="metric-label">Active Alerts</span>
+              <span class="metric-value-lg" id="activeAlerts">0</span>
+              <span class="metric-context">Last: 11:04:30</span>
+            </div>
+
+            <!-- Safety Badge -->
+            <div class="metric-card safety-card anim-element" id="safetyCard">
+              <span class="metric-label">Safety Level</span>
+              <div class="metric-row">
+                <div class="safety-dot" id="safetyDot"></div>
+                <span class="safety-value" id="safetyLevel">MODERATE</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. Content Grid (Camera + Map) -->
+          <section class="content-grid">
+            <!-- Camera Feed -->
+            <div class="content-card anim-element">
+              <div class="content-header">
+                <span>Live Camera Feed</span>
+              </div>
+              <div class="visual-container">
+                <img id="videoFeed" src="" alt="Live Feed" style="width:100%;height:100%;object-fit:contain;background:#000;" />
+<script>(function(){var host=location.hostname;var camHost=(host.indexOf("10.42.0.")===0)?"10.42.0.1":((host==="10.10.79.136"||host==="10.10.79.159")?"10.10.79.159":host);var img=document.getElementById("videoFeed");if(!img)return;img.src="http://"+camHost+":9997/video";img.onerror=function(){setTimeout(function(){img.src="http://"+camHost+":9997/video?t="+Date.now();},2000);};})();</script>
+                <div class="overlay-info">
+                  Crossing: <span id="overlayTimer">00:00</span> | Mode: Auto
+                </div>
+                <div class="status-badge" id="cameraStatus">Live</div>
+                <button class="expand-cam-btn" id="expandCamBtn" title="Expand — View Both Feeds">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <polyline points="9 21 3 21 3 15"></polyline>
+                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Map -->
+            <div class="content-card anim-element">
+              <div class="content-header">
+                <span>Deployment Location</span>
+              </div>
+              <div class="visual-container map-container">
+                <!-- Dashboard Mini Map (Static for now or separate instance) -->
+                <div class="deploy-map-wrapper" id="dashboardMapWrapper"
+                  style="width: 100%; height: 100%; position: relative; overflow: hidden; border-radius: 16px;">
+                  <div class="map-theme-toggle" style="transform: scale(0.8); top: 10px; right: 10px; left: auto;">
+                    <button class="theme-btn active" data-theme="dark">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                      </svg>
+                    </button>
+                    <button class="theme-btn" data-theme="light">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="coord-overlay"
+                    style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,0.85); color: #ffffff; padding: 12px 24px; border-radius: 8px; font: 18px monospace; display: none; pointer-events: none; text-align: center; white-space: pre-wrap;">
+                  </div>
+
+                  <div class="map-controls-right"
+                    style="bottom: 10px; right: 10px; transform: scale(0.8); transform-origin: bottom right;">
+                    <button class="map-ctrl-btn pick-coords-btn" title="Pick Coords (Dev)"
+                      style="font-size: 14px;">📍</button>
+                    <button class="map-ctrl-btn reset-view-btn" title="Reset View">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                      </svg>
+                    </button>
+                    <button class="map-ctrl-btn fullscreen-btn" title="Fullscreen">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                      </svg>
+                    </button>
+                    <button class="map-ctrl-btn tilt-toggle-btn" title="3D Tilt">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                          d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                        </path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="map-zoom-controls"
+                    style="right: 14px; bottom: 25px; left: auto; transform: scale(0.8); transform-origin: bottom right;">
+                    <button class="zoom-btn zoom-in-btn">+</button>
+                    <span class="map-zoom-level">1.0×</span>
+                    <button class="zoom-btn zoom-out-btn">−</button>
+                  </div>
+
+                  <div class="map-canvas">
+                    <div class="map-image-wrapper">
+                      <img src="assets/images/pedestrian_lane_msuiit.jpg" class="map-blueprint-img" draggable="false"
+                        alt="MSU-IIT Campus Map" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- 4. Secondary Metrics Row -->
+          <section class="metrics-secondary">
+            <div class="mini-metric anim-element">
+              <span class="mini-value" id="pedestriansToday">16</span>
+              <span class="mini-label">Ped. Today</span>
+            </div>
+            <div class="mini-metric anim-element">
+              <span class="mini-value" id="criticalAlertsToday">4</span>
+              <span class="mini-label">Critical Alerts</span>
+            </div>
+            <div class="mini-metric trend-card anim-element">
+              <div class="trend-row">
+                <span class="trend-arrow">—</span>
+                <span class="trend-value">—</span>
+              </div>
+              <span class="mini-label">Weekly Trend</span>
+            </div>
+            <div class="mini-metric anim-element">
+              <span class="mini-value" id="peakHour">12:00-13:00</span>
+              <span class="mini-label">Peak Hour</span>
+            </div>
+            <div class="mini-metric anim-element">
+              <div class="metric-row center">
+                <span class="mini-value" id="inferenceFps">11.2</span>
+                <span class="unit-sm">fps</span>
+              </div>
+              <span class="mini-label">Inference</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- VIEW: LIVE CAMERA FEED (Single-View with Toggle) -->
+        <div id="view-livecam" class="view-section livecam-view">
+          <header class="app-header">
+            <div class="header-left">
+              <h1 class="app-title">Live Camera Feed</h1>
+              <p class="app-subtitle">Pole Monitoring · MSU-IIT Campus</p>
+            </div>
+            <div class="header-right">
+              <div class="live-indicator">
+                <div class="pulse-dot"></div>
+                <span>LIVE</span>
+              </div>
+              <div class="datetime" id="livecamDatetime"></div>
+            </div>
+          </header>
+
+          <div class="livecam-body">
+            <div class="livecam-single">
+              <div class="livecam-card livecam-card-full">
+                <div class="livecam-canvas-wrap">
+                  <img id="livecamImgPole1" alt="Live feed" style="width:100%;height:100%;object-fit:contain;background:#000;" />
+                  <div class="livecam-overlay">
+                    <span class="livecam-overlay-ip" id="livecam-active-ip">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: ANALYTICS -->
+        <div id="view-analytics" class="view-section analytics-view">
+          <!-- Header -->
+          <header class="app-header">
+            <div class="header-left">
+              <h1 class="app-title">Pedestrian Analytics</h1>
+              <p class="app-subtitle">Historical Data &amp; Trends · MSU-IIT Campus</p>
+            </div>
+            <div class="header-right">
+              <div class="analytics-date-badge">
+                <i data-lucide="calendar" style="width:13px;height:13px;"></i>
+                <span id="analytics-date-label">Today</span>
+              </div>
+            </div>
+          </header>
+
+          <!-- Scrollable body -->
+          <div class="analytics-body">
+
+            <!-- ── ROW 1: Stat Cards ── -->
+            <section class="analytics-stat-row">
+              <!-- Peak Hour -->
+              <div class="analytics-stat-card accentGreen">
+                <div class="asc-icon-wrap green">
+                  <i data-lucide="zap" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Busiest Hour</span>
+                  <span class="asc-value" id="stat-peak-hour">—</span>
+                  <span class="asc-sub" id="stat-peak-count">—</span>
+                </div>
+              </div>
+              <!-- Total Today -->
+              <div class="analytics-stat-card">
+                <div class="asc-icon-wrap blue">
+                  <i data-lucide="users" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Total Today</span>
+                  <span class="asc-value" id="stat-total-today">—</span>
+                  <span class="asc-sub" id="stat-total-today-sub">since midnight</span>
+                </div>
+              </div>
+              <!-- Weekly Average -->
+              <div class="analytics-stat-card">
+                <div class="asc-icon-wrap purple">
+                  <i data-lucide="trending-up" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Weekly Average</span>
+                  <span class="asc-value" id="stat-weekly-avg">—</span>
+                  <span class="asc-sub" id="stat-weekly-sub">pedestrians/day</span>
+                </div>
+              </div>
+              <!-- This Hour -->
+              <div class="analytics-stat-card">
+                <div class="asc-icon-wrap amber">
+                  <i data-lucide="clock" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Current Hour</span>
+                  <span class="asc-value" id="stat-current-hour">—</span>
+                  <span class="asc-sub" id="stat-current-hour-sub">this hour</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── ROW 2: Hourly Bar + Mode Donut ── -->
+            <section class="analytics-charts-row">
+              <!-- Hourly Bar Chart -->
+              <div class="analytics-chart-card chart-wide">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Hourly Pedestrian Count</span>
+                    <span class="acc-sub">Crossings per hour · today</span>
+                  </div>
+                  <div class="acc-legend-inline">
+                    <span class="legend-dot-sm" style="background:#4ade80;"></span><span>Peak</span>
+                    <span class="legend-dot-sm" style="background:#60a5fa;"></span><span>Now</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:220px;">
+                  <canvas id="chart-hourly"></canvas>
+                </div>
+              </div>
+
+              <!-- Mode Donut -->
+              <div class="analytics-chart-card chart-narrow">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Mode Breakdown</span>
+                    <span class="acc-sub">System state distribution today</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:180px;">
+                  <canvas id="chart-mode"></canvas>
+                </div>
+                <div class="mode-legend">
+                  <div class="mode-legend-item">
+                    <span class="legend-dot-sm" style="background:#64748b;"></span>
+                    <span class="mode-legend-label">IDLE</span>
+                    <span class="mode-legend-pct" id="mode-legend-idle">—</span>
+                  </div>
+                  <div class="mode-legend-item">
+                    <span class="legend-dot-sm" style="background:#4ade80;"></span>
+                    <span class="mode-legend-label">CROSSING</span>
+                    <span class="mode-legend-pct" id="mode-legend-crossing">—</span>
+                  </div>
+                  <div class="mode-legend-item">
+                    <span class="legend-dot-sm" style="background:#ef4444;"></span>
+                    <span class="mode-legend-label">OBSTRUCTION</span>
+                    <span class="mode-legend-pct" id="mode-legend-obstruction">—</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── ROW 3: Daily Trend + Heatmap ── -->
+            <section class="analytics-charts-row">
+              <!-- Daily Trend Line -->
+              <div class="analytics-chart-card chart-wide">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">7-Day Traffic Trend</span>
+                    <span class="acc-sub">Pedestrian count over the past week</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:200px;">
+                  <canvas id="chart-trend"></canvas>
+                </div>
+              </div>
+
+              <!-- Weekly Heatmap -->
+              <div class="analytics-chart-card chart-narrow">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Activity Heatmap</span>
+                    <span class="acc-sub">Hour × Day intensity (this week)</span>
+                  </div>
+                </div>
+                <div class="heatmap-wrap">
+                  <div class="heatmap-day-labels">
+                    <span>Mon</span><span>Tue</span><span>Wed</span>
+                    <span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                  </div>
+                  <div class="heatmap-grid" id="heatmap-cells"></div>
+                  <div class="heatmap-hour-labels">
+                    <span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span>
+                  </div>
+                  <div class="heatmap-scale">
+                    <span>Low</span>
+                    <div class="heatmap-scale-bar"></div>
+                    <span>High</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </div><!-- /analytics-body -->
+        </div>
+
+        <!-- VIEW: ALERTS -->
+        <div id="view-alerts" class="view-section alerts-view">
+
+          <!-- ── Header ── -->
+          <header class="app-header">
+            <div class="header-left">
+              <h1 class="app-title">Alert &amp; Risk Reports</h1>
+              <p class="app-subtitle">Safety Incident Log · MSU-IIT Campus</p>
+            </div>
+            <div class="header-right">
+              <div class="alerts-date-badge">
+                <i data-lucide="calendar" style="width:13px;height:13px;"></i>
+                <span id="alerts-date-label">Sun, Mar 1</span>
+              </div>
+            </div>
+          </header>
+
+          <!-- ── Scroll Body ── -->
+          <div class="alerts-body">
+
+            <!-- ── ROW 1: Stat Cards ── -->
+            <section class="alerts-stat-row">
+
+              <!-- Total Alerts Today -->
+              <div class="alerts-stat-card">
+                <div class="asc-icon-wrap red">
+                  <i data-lucide="alert-octagon" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Total Alerts Today</span>
+                  <span class="asc-value" id="alerts-total-today">—</span>
+                  <span class="asc-sub">all severity levels</span>
+                </div>
+              </div>
+
+              <!-- Critical Alerts This Week -->
+              <div class="alerts-stat-card">
+                <div class="asc-icon-wrap orange">
+                  <i data-lucide="siren" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Critical Alerts This Week</span>
+                  <span class="asc-value" id="alerts-critical-week">—</span>
+                  <span class="asc-sub">past 7 days</span>
+                </div>
+              </div>
+
+              <!-- Most Common Alert Type -->
+              <div class="alerts-stat-card">
+                <div class="asc-icon-wrap yellow">
+                  <i data-lucide="bar-chart-2" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Obstructions Today</span>
+                  <span class="asc-value asc-value-sm" id="alerts-common-type">0</span>
+                  <span class="asc-sub">today</span>
+                </div>
+              </div>
+
+              <!-- Last Alert Time -->
+              <div class="alerts-stat-card">
+                <div class="asc-icon-wrap slate">
+                  <i data-lucide="clock" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Last Alert Time</span>
+                  <span class="asc-value asc-value-sm" id="alerts-last-time">—</span>
+                  <span class="asc-sub">most recent event</span>
+                </div>
+              </div>
+
+            </section>
+
+            <!-- ── ROW 2: Charts ── -->
+            <section class="alerts-charts-row">
+
+              <!-- Alert Frequency Bar Chart -->
+              <div class="alerts-chart-card chart-wide">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Alert Frequency</span>
+                    <span class="acc-sub">Alerts per day · past 7 days</span>
+                  </div>
+                  <div class="acc-legend-inline">
+                    <span class="legend-dot-sm" style="background:#f87171;"></span><span>High Day</span>
+                    <span class="legend-dot-sm" style="background:#fb923c;"></span><span>Moderate</span>
+                    <span class="legend-dot-sm" style="background:#60a5fa;"></span><span>Normal</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:210px;">
+                  <canvas id="chart-alert-freq"></canvas>
+                </div>
+              </div>
+
+              <!-- Alert Type Donut -->
+              <div class="alerts-chart-card chart-narrow">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Alert Type Breakdown</span>
+                    <span class="acc-sub">Distribution today</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:170px;">
+                  <canvas id="chart-alert-type"></canvas>
+                </div>
+                <div class="type-legend">
+                  <div class="type-legend-item">
+                    <span class="legend-dot-sm" style="background:#f87171;"></span>
+                    <span class="type-legend-label">OBSTRUCTION</span>
+                    <span class="type-legend-pct" id="type-pct-0">—</span>
+                  </div>
+
+                  <div class="type-legend-item">
+                    <span class="legend-dot-sm" style="background:#60a5fa;"></span>
+                    <span class="type-legend-label">SYSTEM HEALTH</span>
+                    <span class="type-legend-pct" id="type-pct-1">—</span>
+                  </div>
+                </div>
+              </div>
+
+            </section>
+
+            <!-- ── ROW 3: Risk Timeline ── -->
+            <section class="alerts-timeline-section">
+              <div class="alerts-chart-card" style="width:100%;">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Risk Level Timeline</span>
+                    <span class="acc-sub">Today's alerts by time · 6 AM – 2 PM</span>
+                  </div>
+                  <div class="acc-legend-inline">
+                    <span class="tl-legend-dot" style="background:#f87171;"></span><span>Critical</span>
+                    <span class="tl-legend-dot" style="background:#fb923c;"></span><span>Moderate</span>
+                    <span class="tl-legend-dot" style="background:#fbbf24;"></span><span>Low</span>
+                  </div>
+                </div>
+                <div class="tl-wrap">
+                  <div class="tl-hour-labels">
+                    <span>6 AM</span><span>7 AM</span><span>8 AM</span><span>9 AM</span>
+                    <span>10 AM</span><span>11 AM</span><span>12 PM</span><span>1 PM</span><span>2 PM</span>
+                  </div>
+                  <div class="tl-track">
+                    <div class="tl-rail"></div>
+                    <div class="tl-dots" id="risk-timeline-track"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── ROW 4: Alert Log Table ── -->
+            <section class="alerts-table-section">
+              <div class="alerts-chart-card" style="width:100%;">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Alert Log</span>
+                    <span class="acc-sub">Today's incidents in reverse chronological order</span>
+                  </div>
+                  <div class="alt-active-pill">
+                    <span class="alt-pulse-dot"></span>
+                    <span>2 Active</span>
+                  </div>
+                </div>
+                <div class="alt-table-wrap">
+                  <table class="alt-table">
+                    <thead>
+                      <tr>
+                        <th class="alt-th">Timestamp</th>
+                        <th class="alt-th">Location</th>
+                        <th class="alt-th">Alert Type</th>
+                        <th class="alt-th">Severity</th>
+                        <th class="alt-th">Status</th>
+                        <th class="alt-th">Snapshot</th>
+                      </tr>
+                    </thead>
+                    <tbody id="alert-log-tbody">
+                      <!-- Injected by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+          </div><!-- /alerts-body -->
+        </div>
+
+        <!-- VIEW: PERFORMANCE -->
+        <div id="view-performance" class="view-section perf-view">
+
+          <!-- ── Header ── -->
+          <header class="app-header">
+            <div class="header-left">
+              <h1 class="app-title">System Performance</h1>
+              <p class="app-subtitle">Hardware &amp; Network Monitoring · MSU-IIT Campus</p>
+            </div>
+            <div class="header-right">
+              <div class="pole-toggle" id="poleTogglePerformance">
+                <button class="pole-toggle-btn active" data-pole="pole-1">POLE 1</button>
+                <button class="pole-toggle-btn" data-pole="pole-2">POLE 2</button>
+              </div>
+              <div class="perf-live-badge">
+                <span class="perf-pulse-dot"></span>
+                <span>LIVE TELEMETRY</span>
+              </div>
+            </div>
+          </header>
+
+          <!-- ── Scroll Body ── -->
+          <div class="perf-body">
+
+            <!-- ── ROW 1: Stat Cards ── -->
+            <section class="perf-stat-row">
+
+              <!-- Overall System Status -->
+              <div class="perf-stat-card">
+                <div class="asc-icon-wrap green">
+                  <i data-lucide="check-circle-2" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Overall System Status</span>
+                  <div class="perf-status-row">
+                    <span class="perf-status-indicator good" id="perf-status-dot"></span>
+                    <span class="asc-value asc-value-sm" id="perf-status-value">All Systems Normal</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CPU Temperature -->
+              <div class="perf-stat-card">
+                <div class="asc-icon-wrap amber">
+                  <i data-lucide="thermometer" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">CPU Temperature</span>
+                  <div class="perf-temp-row">
+                    <span class="asc-value" id="perf-cpu-temp">61.3</span>
+                    <span class="asc-sub">°C</span>
+                  </div>
+                  <div class="perf-temp-bar-bg">
+                    <div class="perf-temp-bar-fill" id="perf-temp-bar" style="width:47%;background:#4ade80;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Battery Level -->
+              <div class="perf-stat-card">
+                <div class="asc-icon-wrap blue">
+                  <i data-lucide="battery-charging" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Battery Level</span>
+                  <span class="asc-value" id="perf-battery-pct">87%</span>
+                  <span class="asc-sub" id="perf-battery-hours">~6.9h remaining</span>
+                </div>
+              </div>
+
+              <!-- Inference Speed -->
+              <div class="perf-stat-card">
+                <div class="asc-icon-wrap purple">
+                  <i data-lucide="zap" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Inference Speed</span>
+                  <div class="perf-fps-row">
+                    <span class="asc-value" id="perf-fps-value">10.4</span>
+                    <span class="asc-sub">FPS</span>
+                    <span class="perf-fps-tag good" id="perf-fps-status">On Target</span>
+                  </div>
+                  <span class="asc-sub">Target: 8–12 FPS</span>
+                </div>
+              </div>
+
+            </section>
+
+            <!-- ── ROW 2: Node Status Cards ── -->
+            <section class="perf-nodes-row">
+
+              <!-- Pole 1 -->
+              <div class="perf-node-card">
+                <div class="perf-node-header">
+                  <div class="perf-node-dot" id="node-pole1-dot"></div>
+                  <span class="perf-node-title">Pole 1</span>
+                  <span class="perf-node-role">Sensing Node</span>
+                </div>
+                <div class="perf-node-grid">
+                  <div class="perf-node-item">
+                    <i data-lucide="cpu" class="perf-node-icon"></i>
+                    <span class="perf-node-label">Pi Status</span>
+                    <span class="node-status-value" id="node-pole1-pi">—</span>
+                  </div>
+                  <div class="perf-node-item">
+                    <i data-lucide="camera" class="perf-node-icon"></i>
+                    <span class="perf-node-label">Camera</span>
+                    <span class="node-status-value" id="node-pole1-camera">—</span>
+                  </div>
+                  <div class="perf-node-item">
+                    <i data-lucide="battery-charging" class="perf-node-icon"></i>
+                    <span class="perf-node-label">Battery</span>
+                    <span class="node-status-value" id="node-pole1-battery">—</span>
+                  </div>
+                  <div class="perf-node-item">
+                    <i data-lucide="wifi" class="perf-node-icon"></i>
+                    <span class="perf-node-label">MQTT</span>
+                    <span class="node-status-value" id="node-pole1-network">—</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pole 2 -->
+              <div class="perf-node-card">
+                <div class="perf-node-header">
+                  <div class="perf-node-dot" id="node-pole2-dot"></div>
+                  <span class="perf-node-title">Pole 2</span>
+                  <span class="perf-node-role">Display Node</span>
+                </div>
+                <div class="perf-node-grid">
+                  <div class="perf-node-item">
+                    <i data-lucide="cpu" class="perf-node-icon"></i>
+                    <span class="perf-node-label">Pi Status</span>
+                    <span class="node-status-value" id="node-pole2-pi">—</span>
+                  </div>
+                  <div class="perf-node-item">
+                    <i data-lucide="camera" class="perf-node-icon"></i>
+                    <span class="perf-node-label">Camera</span>
+                    <span class="node-status-value" id="node-pole2-camera">N/A</span>
+                  </div>
+                  <div class="perf-node-item">
+                    <i data-lucide="battery-charging" class="perf-node-icon"></i>
+                    <span class="perf-node-label">Battery</span>
+                    <span class="node-status-value" id="node-pole2-battery">—</span>
+                  </div>
+                  <div class="perf-node-item">
+                    <i data-lucide="wifi" class="perf-node-icon"></i>
+                    <span class="perf-node-label">MQTT</span>
+                    <span class="node-status-value" id="node-pole2-network">—</span>
+                  </div>
+                </div>
+              </div>
+
+            </section>
+
+            <!-- ── ROW 3: Charts (CPU/Mem + Latency) ── -->
+            <section class="perf-charts-row">
+              <!-- CPU & Memory -->
+              <div class="perf-chart-card chart-wide">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">CPU & Memory Usage</span>
+                    <span class="acc-sub">Utilization over the last 60 minutes · both poles</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:200px;">
+                  <canvas id="chart-cpu-mem"></canvas>
+                </div>
+              </div>
+
+              <!-- Inference Latency -->
+              <div class="perf-chart-card chart-narrow">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Inference Latency</span>
+                    <span class="acc-sub">Detection-to-signal response · target ≤200ms</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:200px;">
+                  <canvas id="chart-inference-latency"></canvas>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── ROW 4: Battery Discharge (full width) ── -->
+            <section class="perf-charts-row-single">
+              <!-- Battery Discharge -->
+              <div class="perf-chart-card" style="flex:1;width:100%;">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Power Supply Voltage</span>
+                    <span class="acc-sub">Nominal supply voltage · ADC sensor integration planned</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:200px;">
+                  <canvas id="chart-battery-discharge"></canvas>
+                </div>
+              </div>
+
+
+            </section>
+
+          </div><!-- /perf-body -->
+        </div>
+
+        <!-- VIEW: COMPLIANCE -->
+        <div id="view-compliance" class="view-section compliance-view" style="display:none;">
+
+          <!-- ── Header ── -->
+          <header class="app-header">
+            <div class="header-left">
+              <h1 class="app-title">Deployment Impact</h1>
+              <p class="app-subtitle">Driver Behavior · Near-Miss Reduction · MSU-IIT Campus</p>
+            </div>
+            <div class="header-right">
+              <div class="comp-date-badge">
+                <i data-lucide="calendar" style="width:13px;height:13px;"></i>
+                <span>Deployment: TBD</span>
+              </div>
+              <button class="comp-report-btn" onclick="void(0)">
+                <i data-lucide="file-bar-chart" style="width:13px;height:13px;"></i>
+                <span>View Report</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- ── Scroll Body ── -->
+          <div class="compliance-body">
+
+            <!-- ── ROW 1: Stat Cards ── -->
+            <section class="compliance-stat-row">
+              <!-- Driver Yield Rate -->
+              <div class="compliance-stat-card">
+                <div class="asc-icon-wrap cyan">
+                  <i data-lucide="car" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Driver Yield Rate</span>
+                  <span class="asc-value" id="comp-yield-rate">—</span>
+                  <span class="asc-sub">awaiting deployment</span>
+                </div>
+              </div>
+
+              <!-- Near-Miss Prevented -->
+              <div class="compliance-stat-card">
+                <div class="asc-icon-wrap blue">
+                  <i data-lucide="shield-check" class="asc-icon"></i>
+                </div>
+                <div class="asc-body">
+                  <span class="asc-label">Near-Miss Incidents Prevented</span>
+                  <span class="asc-value" id="comp-near-miss">—</span>
+                  <span class="asc-sub">awaiting deployment</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── ROW 2: Charts (Trend + Near-Miss) ── -->
+            <section class="compliance-charts-row">
+              <!-- Driver Yield Rate Trend -->
+              <div class="compliance-chart-card chart-wide">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Driver Yield Rate Trend (14 Days)</span>
+                    <span class="acc-sub">Driver yield rate over 14 days · two deployment sites</span>
+                  </div>
+                  <div class="acc-legend-inline">
+                    <span class="legend-dot-sm" style="background:#4ade80;"></span><span>Site 1 Yield Rate</span>
+                    <span class="legend-dot-sm" style="background:#60a5fa;"></span><span>Site 2 Yield Rate</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:220px;">
+                  <canvas id="chart-compliance-trend"></canvas>
+                </div>
+              </div>
+
+              <!-- Near-Miss Reduction Bar -->
+              <div class="compliance-chart-card chart-narrow">
+                <div class="acc-header">
+                  <div class="acc-title-group">
+                    <span class="acc-title">Near-Miss Reduction</span>
+                    <span class="acc-sub">Before vs After SWiPS · per day</span>
+                  </div>
+                  <div class="acc-legend-inline">
+                    <span class="legend-dot-sm" style="background:rgba(239,68,68,0.65);"></span><span>Before</span>
+                    <span class="legend-dot-sm" style="background:rgba(74,222,128,0.75);"></span><span>After</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:220px;">
+                  <canvas id="chart-near-miss"></canvas>
+                </div>
+              </div>
+            </section>
+
+
+            <!-- ── ROW 3: Deployment Impact Summary ── -->
+            <section class="deploy-compare-row">
+              <!-- Week 1 -->
+              <div class="deploy-compare-card">
+                <div class="deploy-compare-header">
+                  <div class="deploy-compare-dot week1"></div>
+                  <div>
+                    <span class="deploy-compare-title">Week 1</span>
+                    <span class="deploy-compare-dates" id="deploy-week1-dates">TBD</span>
+                  </div>
+                </div>
+                <div class="deploy-compare-grid">
+                  <div class="deploy-compare-item">
+                    <i data-lucide="car" class="deploy-compare-icon"></i>
+                    <span class="deploy-compare-label">Yield Rate</span>
+                    <span class="deploy-compare-value" id="deploy-week1-yield">—</span>
+                  </div>
+                  <div class="deploy-compare-item">
+                    <i data-lucide="shield-check" class="deploy-compare-icon"></i>
+                    <span class="deploy-compare-label">Near-Misses Prevented</span>
+                    <span class="deploy-compare-value" id="deploy-week1-nearmiss">—</span>
+                  </div>
+                </div>
+                <div class="deploy-compare-notes">
+                  <span class="deploy-compare-notes-label">NOTES</span>
+                  <span class="deploy-compare-notes-text" id="deploy-week1-notes">—</span>
+                </div>
+              </div>
+
+              <!-- Week 2 -->
+              <div class="deploy-compare-card">
+                <div class="deploy-compare-header">
+                  <div class="deploy-compare-dot week2"></div>
+                  <div>
+                    <span class="deploy-compare-title">Week 2</span>
+                    <span class="deploy-compare-dates" id="deploy-week2-dates">TBD</span>
+                  </div>
+                </div>
+                <div class="deploy-compare-grid">
+                  <div class="deploy-compare-item">
+                    <i data-lucide="car" class="deploy-compare-icon"></i>
+                    <span class="deploy-compare-label">Yield Rate</span>
+                    <span class="deploy-compare-value" id="deploy-week2-yield">—</span>
+                  </div>
+                  <div class="deploy-compare-item">
+                    <i data-lucide="shield-check" class="deploy-compare-icon"></i>
+                    <span class="deploy-compare-label">Near-Misses Prevented</span>
+                    <span class="deploy-compare-value" id="deploy-week2-nearmiss">—</span>
+                  </div>
+                </div>
+                <div class="deploy-compare-notes">
+                  <span class="deploy-compare-notes-label">NOTES</span>
+                  <span class="deploy-compare-notes-text" id="deploy-week2-notes">—</span>
+                </div>
+              </div>
+            </section>
+
+
+
+          </div><!-- /compliance-body -->
+        </div>
+
+        <!-- VIEW: MAP -->
+        <div id="view-map" class="view-section">
+          <!-- All control overlays positioned here -->
+          <div class="deploy-map-wrapper map-section" id="deployMapWrapper">
+
+            <div class="map-header">
+              <h3 class="map-title">Deployment Map</h3>
+              <p class="map-subtitle">Geospatial Overview • MSU-IIT Tibanga Campus</p>
+            </div>
+
+            <div class="map-theme-toggle">
+              <button class="theme-btn active" data-theme="dark">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg> Dark
+              </button>
+              <button class="theme-btn" data-theme="light">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg> Light
+              </button>
+            </div>
+
+            <div class="coord-overlay"
+              style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,0,0,0.85); color: #ffffff; padding: 12px 24px; border-radius: 8px; font: 18px monospace; display: none; pointer-events: none; text-align: center; white-space: pre-wrap;">
+            </div>
+
+            <div class="map-controls-right">
+              <button class="map-ctrl-btn pick-coords-btn" title="Pick Coords (Dev)"
+                style="font-size: 14px;">📍</button>
+              <button class="map-ctrl-btn reset-view-btn" title="Reset View">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+              </button>
+              <button class="map-ctrl-btn fullscreen-btn" title="Fullscreen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <polyline points="9 21 3 21 3 15"></polyline>
+                  <line x1="21" y1="3" x2="14" y2="10"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+              </button>
+              <button class="map-ctrl-btn tilt-toggle-btn" title="3D Tilt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                  </path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div class="map-zoom-controls">
+              <button class="zoom-btn zoom-in-btn">+</button>
+              <span class="map-zoom-level">1.0×</span>
+              <button class="zoom-btn zoom-out-btn">−</button>
+            </div>
+
+
+
+
+
+            <div class="map-canvas">
+              <div class="map-image-wrapper">
+                <img src="assets/images/pedestrian_lane_msuiit.jpg" class="map-blueprint-img" draggable="false"
+                  alt="MSU-IIT Campus Map" />
+                <!-- Coverage circles and markers will be absolutely positioned here -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- VIEW: SETTINGS -->
+        <div id="view-settings" class="view-section settings-view">
+          <header class="app-header">
+            <div class="header-left">
+              <h1 class="app-title">Settings</h1>
+              <p class="app-subtitle">System Configuration &amp; Preferences · SWiPS Admin Panel</p>
+            </div>
+            <div class="header-right">
+              <div class="stg-version-badge">
+                <i data-lucide="info" style="width:13px;height:13px;"></i>
+                <span>SWiPS v1.0.0</span>
+              </div>
+            </div>
+          </header>
+
+          <div class="settings-body">
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- 1. SYSTEM CONFIGURATION                                    -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="stg-icon-wrap stg-icon-blue">
+                  <i data-lucide="cpu" class="stg-icon"></i>
+                </div>
+                <div>
+                  <h2 class="stg-card-title">System Configuration</h2>
+                  <p class="stg-card-desc">Core detection parameters and hardware targets for the SWiPS edge nodes.</p>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <!-- Detection Sensitivity -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Detection Sensitivity</label>
+                    <p class="stg-hint">YOLOv8n confidence threshold. Higher values reduce false positives but may miss
+                      detections.</p>
+                  </div>
+                  <div class="stg-control stg-slider-wrap">
+                    <input type="range" id="stg-detection-sensitivity" class="stg-slider" min="0" max="100" value="55">
+                    <span class="stg-slider-val" id="stg-detection-sensitivity-val">55%</span>
+                  </div>
+                </div>
+
+                <!-- Obstruction Timer -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Obstruction Timer Threshold</label>
+                    <p class="stg-hint">Duration in seconds before an obstruction triggers a critical alert.</p>
+                  </div>
+                  <div class="stg-control">
+                    <div class="stg-input-group">
+                      <input type="number" id="stg-obstruction-timer" class="stg-input" value="30" min="5" max="120">
+                      <span class="stg-input-unit">sec</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pedestrian Count Thresholds -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Pedestrian Count Thresholds</label>
+                    <p class="stg-hint">Define group size boundaries for Small Group and Large Group crossing modes.</p>
+                  </div>
+                  <div class="stg-control stg-dual-input">
+                    <div class="stg-input-group">
+                      <span class="stg-input-label-sm">Small ≤</span>
+                      <input type="number" id="stg-small-group" class="stg-input stg-input-sm" value="4" min="1"
+                        max="10">
+                    </div>
+                    <div class="stg-input-group">
+                      <span class="stg-input-label-sm">Large ≥</span>
+                      <input type="number" id="stg-large-group" class="stg-input stg-input-sm" value="5" min="2"
+                        max="20">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Camera FPS Target -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Camera FPS Target</label>
+                    <p class="stg-hint">Target frames per second for the camera feed processing pipeline.</p>
+                  </div>
+                  <div class="stg-control">
+                    <select id="stg-camera-fps" class="stg-select">
+                      <option value="8">8 FPS</option>
+                      <option value="10" selected>10 FPS</option>
+                      <option value="12">12 FPS</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stg-card-footer">
+                <button class="stg-save-btn" id="save-system-config">
+                  <i data-lucide="save" style="width:14px;height:14px;"></i>
+                  Save Settings
+                </button>
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- 2. ALERT SETTINGS                                          -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="stg-icon-wrap stg-icon-amber">
+                  <i data-lucide="bell-ring" class="stg-icon"></i>
+                </div>
+                <div>
+                  <h2 class="stg-card-title">Alert Settings</h2>
+                  <p class="stg-card-desc">Configure dashboard audio feedback for incoming alerts.</p>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <!-- Alert Sound -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Alert Sound</label>
+                    <p class="stg-hint">Play an audible notification on the dashboard when a critical alert is received.
+                    </p>
+                  </div>
+                  <div class="stg-control">
+                    <label class="stg-toggle">
+                      <input type="checkbox" id="stg-alert-sound" checked>
+                      <span class="stg-toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stg-card-footer">
+                <button class="stg-save-btn" id="save-alert-settings">
+                  <i data-lucide="save" style="width:14px;height:14px;"></i>
+                  Save Settings
+                </button>
+              </div>
+            </div>
+
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- 4. DASHBOARD PREFERENCES                                   -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="stg-icon-wrap stg-icon-purple">
+                  <i data-lucide="palette" class="stg-icon"></i>
+                </div>
+                <div>
+                  <h2 class="stg-card-title">Dashboard Preferences</h2>
+                  <p class="stg-card-desc">Appearance, refresh rate, and localization options for the dashboard
+                    interface.</p>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <!-- Dark/Light Mode -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Dark Mode</label>
+                    <p class="stg-hint">Toggle between dark and light dashboard theme. Default is dark for reduced eye
+                      strain.</p>
+                  </div>
+                  <div class="stg-control">
+                    <label class="stg-toggle">
+                      <input type="checkbox" id="stg-dark-mode" checked>
+                      <span class="stg-toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Auto-refresh Interval -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Auto-refresh Interval</label>
+                    <p class="stg-hint">How frequently the dashboard polls for new data from the edge nodes.</p>
+                  </div>
+                  <div class="stg-control">
+                    <select id="stg-auto-refresh" class="stg-select">
+                      <option value="3" selected>3 seconds</option>
+                      <option value="5">5 seconds</option>
+                      <option value="10">10 seconds</option>
+                      <option value="30">30 seconds</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Timezone -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Timezone</label>
+                    <p class="stg-hint">Timezone used for timestamps, logs, and scheduled operations.</p>
+                  </div>
+                  <div class="stg-control">
+                    <select id="stg-timezone" class="stg-select">
+                      <option value="Asia/Manila" selected>Asia/Manila (UTC+8)</option>
+                      <option value="Asia/Singapore">Asia/Singapore (UTC+8)</option>
+                      <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                      <option value="UTC">UTC</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Language -->
+                <div class="settings-item">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Language</label>
+                    <p class="stg-hint">Dashboard interface language for labels, alerts, and reports.</p>
+                  </div>
+                  <div class="stg-control">
+                    <select id="stg-language" class="stg-select">
+                      <option value="en" selected>English</option>
+                      <option value="fil">Filipino</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stg-card-footer">
+                <button class="stg-save-btn" id="save-dashboard-prefs">
+                  <i data-lucide="save" style="width:14px;height:14px;"></i>
+                  Save Settings
+                </button>
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- 5. ACCOUNT & SECURITY                                      -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="stg-icon-wrap stg-icon-red">
+                  <i data-lucide="shield" class="stg-icon"></i>
+                </div>
+                <div>
+                  <h2 class="stg-card-title">Account &amp; Security</h2>
+                  <p class="stg-card-desc">Admin credentials for dashboard access.</p>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <!-- Change Admin Password -->
+                <div class="settings-item stg-item-password">
+                  <div class="stg-item-text">
+                    <label class="stg-label">Change Admin Password</label>
+                    <p class="stg-hint">Update the admin account password. Must be at least 6 characters.</p>
+                  </div>
+                  <div class="stg-password-fields">
+                    <div class="stg-pw-field">
+                      <label class="stg-pw-label">Current Password</label>
+                      <input type="password" id="current-password" class="stg-input stg-input-pw"
+                        placeholder="Enter current password">
+                    </div>
+                    <div class="stg-pw-field">
+                      <label class="stg-pw-label">New Password</label>
+                      <input type="password" id="new-password" class="stg-input stg-input-pw"
+                        placeholder="Enter new password">
+                    </div>
+                    <div class="stg-pw-field">
+                      <label class="stg-pw-label">Confirm New Password</label>
+                      <input type="password" id="confirm-password" class="stg-input stg-input-pw"
+                        placeholder="Confirm new password">
+                    </div>
+                    <button class="stg-save-btn stg-pw-save-btn" id="save-password-btn">
+                      <i data-lucide="lock" style="width:14px;height:14px;"></i>
+                      Update Password
+                    </button>
+                    <p class="stg-future-note">This feature is planned for a future release.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /settings-body -->
+        </div>
+
+        <!-- VIEW: ABOUT SWIPS -->
+        <div id="view-about" class="view-section about-view">
+          <div class="about-body">
+
+            <!-- ═══════ 1. HERO / INTRO ═══════ -->
+            <section class="about-hero">
+              <div class="about-hero-glow"></div>
+
+
+
+              <!-- Hero Text -->
+              <div class="about-hero-text abt-reveal">
+                <img src="./SWiPS logo.svg" alt="SWiPS Logo" class="about-logo" />
+                <h1 class="about-hero-title">Smart Warning for<br>Pedestrian Safety</h1>
+                <p class="about-hero-tagline">An AI-Powered Portable Pedestrian Warning System<br>for Unsignalized
+                  Campus Crosswalks</p>
+                <div class="about-hero-badges">
+                  <span class="about-badge version">v1.0.0</span>
+                  <span class="about-badge location">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    MSU-IIT Tibanga Campus, Iligan City
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═══════ 2. HOW SWiPS WORKS ═══════ -->
+            <section class="about-section abt-reveal">
+              <h2 class="about-section-title">How SWiPS Works</h2>
+              <p class="about-section-sub">Real-time pedestrian detection to display actuation · ~117.9ms mean latency</p>
+
+              <div class="about-flow">
+                <!-- Step 1 -->
+                <div class="about-flow-card">
+                  <div class="about-flow-icon">👁️</div>
+                  <div class="about-flow-step">Step 1</div>
+                  <h3 class="about-flow-title">DETECT</h3>
+                  <p class="about-flow-desc">YOLOv8n AI detects pedestrians in real time via dual IP cameras</p>
+                </div>
+                <!-- Arrow -->
+                <div class="about-flow-arrow">
+                  <svg width="40" height="24" viewBox="0 0 40 24" fill="none">
+                    <path d="M0 12H32M32 12L24 4M32 12L24 20" stroke="#4ade80" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <!-- Step 2 -->
+                <div class="about-flow-card">
+                  <div class="about-flow-icon">🧠</div>
+                  <div class="about-flow-step">Step 2</div>
+                  <h3 class="about-flow-title">DECIDE</h3>
+                  <p class="about-flow-desc">Edge computing on Raspberry Pi 5 determines crossing mode</p>
+                </div>
+                <!-- Arrow -->
+                <div class="about-flow-arrow">
+                  <svg width="40" height="24" viewBox="0 0 40 24" fill="none">
+                    <path d="M0 12H32M32 12L24 4M32 12L24 20" stroke="#4ade80" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <!-- Step 3 -->
+                <div class="about-flow-card">
+                  <div class="about-flow-icon">💡</div>
+                  <div class="about-flow-step">Step 3</div>
+                  <h3 class="about-flow-title">ALERT</h3>
+                  <p class="about-flow-desc">Portable monitors display color-coded warnings to drivers</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═══════ 3. ALERT MODES ═══════ -->
+            <section class="about-section abt-reveal">
+              <h2 class="about-section-title">Alert Mode Explanation</h2>
+              <p class="about-section-sub">Three operational states based on pedestrian detection and obstruction logic
+              </p>
+
+              <div class="about-modes">
+                <!-- IDLE -->
+                <div class="about-mode-card mode-red">
+                  <div class="about-mode-indicator red"></div>
+                  <div class="about-mode-body">
+                    <div class="about-mode-emoji">🔴</div>
+                    <h3 class="about-mode-title">IDLE</h3>
+                    <p class="about-mode-condition">No pedestrians detected</p>
+                    <div class="about-mode-detail">
+                      <span class="about-mode-tag">Steady RED</span>
+                      <span class="about-mode-brightness">60% brightness</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- CROSSING -->
+                <div class="about-mode-card mode-green">
+                  <div class="about-mode-indicator green"></div>
+                  <div class="about-mode-body">
+                    <div class="about-mode-emoji">🟢</div>
+                    <h3 class="about-mode-title">CROSSING</h3>
+                    <p class="about-mode-condition">Pedestrians detected · &ldquo;CROSS NOW&rdquo;</p>
+                    <div class="about-mode-detail">
+                      <span class="about-mode-tag green-tag">Steady GREEN</span>
+                      <span class="about-mode-brightness">100% brightness</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- OBSTRUCTION -->
+                <div class="about-mode-card mode-flash-red">
+                  <div class="about-mode-indicator flash-red"></div>
+                  <div class="about-mode-body">
+                    <div class="about-mode-emoji">🔴</div>
+                    <h3 class="about-mode-title">OBSTRUCTION</h3>
+                    <p class="about-mode-condition">Blocked &gt; 30 seconds · display retains CROSSING · backend logs alert &amp; snapshot</p>
+                    <div class="about-mode-detail">
+                      <span class="about-mode-tag flash-tag">Flashing RED</span>
+                      <span class="about-mode-brightness">2 Hz frequency</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═══════ 4. SYSTEM SPECIFICATIONS ═══════ -->
+            <section class="about-section abt-reveal">
+              <h2 class="about-section-title">System Specifications</h2>
+              <p class="about-section-sub">Hardware, software, and infrastructure powering SWiPS</p>
+
+              <div class="about-specs-grid">
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">⚡</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">Processing</span>
+                    <span class="about-spec-value">Raspberry Pi 5 8GB</span>
+                  </div>
+                </div>
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">🤖</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">AI Model</span>
+                    <span class="about-spec-value">YOLOv8n via NCNN</span>
+                  </div>
+                </div>
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">📷</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">Cameras</span>
+                    <span class="about-spec-value">TP-Link VIGI C240 4MP IP67</span>
+                  </div>
+                </div>
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">📡</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">Communication</span>
+                    <span class="about-spec-value">MQTT via Mosquitto 2.0.15</span>
+                  </div>
+                </div>
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">🗄️</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">Database</span>
+                    <span class="about-spec-value">InfluxDB 2.7</span>
+                  </div>
+                </div>
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">🔋</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">Power</span>
+                    <span class="about-spec-value">12V 30Ah LiFePO4 Battery (~5.3hr measured)</span>
+                  </div>
+                </div>
+                <div class="about-spec-item">
+                  <div class="about-spec-icon">🛡️</div>
+                  <div class="about-spec-info">
+                    <span class="about-spec-label">Enclosure</span>
+                    <span class="about-spec-value">IP65 Steel, Portable Wheeled Base</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═══════ 5. THE RESEARCH BEHIND IT ═══════ -->
+            <section class="about-section abt-reveal">
+              <h2 class="about-section-title">The Research Behind It</h2>
+              <p class="about-section-sub">Academic foundation and institutional backing</p>
+
+              <div class="about-research-card">
+                <div class="about-research-header">
+                  <div class="about-research-icon">🎓</div>
+                  <div>
+                    <h3 class="about-research-name">Jyresa Mae M. Amboang</h3>
+                    <p class="about-research-role">Researcher</p>
+                  </div>
+                </div>
+                <div class="about-research-details">
+                  <div class="about-research-row">
+                    <span class="about-research-label">Thesis Title</span>
+                    <span class="about-research-value">Design and Development of SWiPS: A Portable AI-Powered Pedestrian
+                      Warning System for Unsignalized Campus Crosswalks</span>
+                  </div>
+                  <div class="about-research-row">
+                    <span class="about-research-label">Thesis Adviser</span>
+                    <span class="about-research-value">Adrian P. Galido, Ph.D.</span>
+                  </div>
+                  <div class="about-research-row">
+                    <span class="about-research-label">Institution</span>
+                    <span class="about-research-value">Mindanao State University – Iligan Institute of Technology</span>
+                  </div>
+                  <div class="about-research-row">
+                    <span class="about-research-label">Program</span>
+                    <span class="about-research-value">Master of Science in Computer Applications</span>
+                  </div>
+                  <div class="about-research-row">
+                    <span class="about-research-label">Department</span>
+                    <span class="about-research-value">College of Computer Studies</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═══════ 6. IMPACT & COMPLIANCE ═══════ -->
+            <section class="about-section about-impact abt-reveal">
+              <div class="about-impact-cards">
+                <div class="about-impact-pill">
+                  <span class="about-impact-emoji">✅</span>
+                  <div>
+                    <span class="about-impact-title">RA 4136 Compliant</span>
+                    <span class="about-impact-sub">Philippine Road Safety Law</span>
+                  </div>
+                </div>
+                <div class="about-impact-pill">
+                  <span class="about-impact-emoji">🌍</span>
+                  <div>
+                    <span class="about-impact-title">Supports SDG 3.6</span>
+                    <span class="about-impact-sub">Halve road traffic deaths</span>
+                  </div>
+                </div>
+                <div class="about-impact-pill">
+                  <span class="about-impact-emoji">🏙️</span>
+                  <div>
+                    <span class="about-impact-title">Supports SDG 11.2</span>
+                    <span class="about-impact-sub">Sustainable transport systems</span>
+                  </div>
+                </div>
+                <div class="about-impact-pill">
+                  <span class="about-impact-emoji">🎓</span>
+                  <div>
+                    <span class="about-impact-title">MSU-IIT Research</span>
+                    <span class="about-impact-sub">Academic Year 2025–2026</span>
+                  </div>
+                </div>
+              </div>
+              <p class="about-footer-text">© 2026 SWiPS · Smart Warning for Pedestrian Safety · All Rights Reserved</p>
+            </section>
+
+          </div><!-- /about-body -->
+        </div>
+
+      </div>
+    </main>
+  </div>
+  <script type="module" src="./script.js"></script>
+</body>
+
+</html>

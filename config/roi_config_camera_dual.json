@@ -1,0 +1,6 @@
+{
+  "video": "LIVE_CAMERA",
+  "crosswalk_roi": [[266,119],[41,334],[729,365],[573,128]],
+  "sidewalk_left_roi": [[0,0],[0,1],[1,1],[1,0]],
+  "sidewalk_right_roi": [[0,0],[0,1],[1,1],[1,0]]
+}
