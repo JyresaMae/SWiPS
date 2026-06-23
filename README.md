@@ -4,6 +4,7 @@
 
 [![IEEE](https://img.shields.io/badge/IEEE-ICITCOM%202026-blue)](https://github.com/JyresaMae/SWiPS)
 [![PACIS](https://img.shields.io/badge/PACIS-2025-green)](https://github.com/JyresaMae/SWiPS)
+[![ISICO](https://img.shields.io/badge/Procedia-ISICO%202025-orange)](https://github.com/JyresaMae/SWiPS)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
@@ -185,6 +186,7 @@ node server.js
 
 - **PACIS 2025** — Scopus-indexed, AIS eLibrary. *"SWiPS: Edge AI Pedestrian Detection and Visual Advisory for Unsignalized Campus Crosswalks"*
 - **IEEE ICITCOM 2026** — Submitted (N34855). *"SWiPS: Edge AI Pedestrian Detection and Visual Advisory for Unsignalized Campus Crosswalks Using YOLOv8n"*
+- **ISICO 2025** — Procedia Computer Science (Elsevier, CC BY-NC-ND). *"From problem analysis to design thinking: Developing the SWiPS system for urban pedestrian safety"*
 
 ---
 
