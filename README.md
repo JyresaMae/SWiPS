@@ -209,7 +209,7 @@ Field deployment at **MSU-IIT campus crosswalks**. See [`media/deployment/`](med
 
 ## Authors
 
-**Maria Jyresa Mae M. Amboang**  
+**Jyresa Mae M. Amboang**  
 MSCA Student, DOST-ERDT National Scholar  
 Department of Computer Applications  
 Mindanao State University – Iligan Institute of Technology
