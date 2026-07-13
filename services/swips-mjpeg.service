@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/swips_project
-ExecStart=/home/pi/swips_env/bin/python3 /home/pi/swips_project/mjpeg_bridge.py
+WorkingDirectory=/home/pi/SWiPS/pole1
+ExecStart=/home/pi/swips_env/bin/python3 /home/pi/SWiPS/pole1/mjpeg_bridge.py
 Restart=always
 RestartSec=5
 
