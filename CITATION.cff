@@ -1,0 +1,62 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "SWiPS: Smart Warning and Pedestrian Safety System"
+abstract: "A two-pole portable edge AI pedestrian advisory system using YOLOv8n NCNN on Raspberry Pi 5 for unsignalized campus crosswalks. Implements a 3-state Moore machine FSM with MQTT inter-pole synchronization and InfluxDB logging."
+authors:
+  - family-names: Amboang
+    given-names: Jyresa Mae M.
+    email: jyresamae.amboang@g.msuiit.edu.ph
+    affiliation: "Mindanao State University – Iligan Institute of Technology"
+    orcid: "https://scholar.google.com/citations?user=c1acMuMAAAAJ"
+repository-code: "https://github.com/JyresaMae/SWiPS"
+url: "https://github.com/JyresaMae/SWiPS"
+license: MIT
+version: "1.0.0"
+date-released: "2026-07-13"
+keywords:
+  - edge AI
+  - pedestrian detection
+  - YOLOv8
+  - NCNN
+  - Raspberry Pi
+  - pedestrian safety
+  - smart crosswalk
+  - computer vision
+  - embedded systems
+  - MQTT
+  - InfluxDB
+  - Moore machine
+  - FSM
+
+references:
+  - type: conference-paper
+    title: "SWiPS: Edge AI Pedestrian Detection and Visual Advisory for Unsignalized Campus Crosswalks Using YOLOv8n"
+    authors:
+      - family-names: Amboang
+        given-names: Jyresa Mae M.
+      - family-names: Alce
+        given-names: Apple Rose B.
+      - family-names: Galido
+        given-names: Adrian P.
+    conference:
+      name: "IEEE International Conference on Informatics, Technology, Communication and Management (ICITCOM 2026)"
+    year: 2026
+
+  - type: conference-paper
+    title: "From problem analysis to design thinking: Developing the SWiPS system for urban pedestrian safety"
+    authors:
+      - family-names: Amboang
+        given-names: Jyresa Mae M.
+      - family-names: Alce
+        given-names: Apple Rose B.
+      - family-names: Galido
+        given-names: Adrian P.
+    journal: "Procedia Computer Science"
+    publisher:
+      name: "Elsevier"
+    conference:
+      name: "Eighth Information Systems International Conference (ISICO 2025)"
+    year: 2025
+    issn: "1877-0509"
+    license: "CC-BY-NC-ND-4.0"
