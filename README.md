@@ -127,7 +127,11 @@ nano server/.env    # paste your InfluxDB token
 See [SETUP.md](SETUP.md) for full configuration details.
 
 ### Network Setup
-...
+
+| Mode | Pole 1 IP | Pole 2 IP | Dashboard |
+|---|---|---|---|
+| Field (hotspot) | 10.42.0.1 | 10.42.0.2 | http://10.42.0.1:3000 |
+| Lab | 10.10.79.159 | 10.10.79.136 | http://10.10.79.159:3000 |
 
 ### Running the System
 
