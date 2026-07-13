@@ -1,6 +1,6 @@
 # SWiPS Setup Guide
 
-This guide covers full setup of both poles from a fresh Raspberry Pi OS installation. Follow each section in order.
+Full setup guide for both poles from a fresh Raspberry Pi OS installation.
 
 ---
 
@@ -42,23 +42,20 @@ This guide covers full setup of both poles from a fresh Raspberry Pi OS installa
 
 ## 2. Physical Assembly
 
-> Reference: see `media/demo/3d_pole_assembly.mp4` for full visual walkthrough.
+> See `media/demo/3d_pole_assembly.mp4` for a full visual walkthrough.
 
-**General guidelines per pole:**
-- Mount the VIGI C240 camera at the top of the pole, angled downward at approximately 30–45° toward the crosswalk.
-- Mount the ARZOPA monitor at eye level (approximately 1.5m from ground) facing oncoming pedestrians.
+- Mount the VIGI C240 camera at the top of the pole, angled 30–45° downward toward the crosswalk.
+- Mount the ARZOPA monitor at approximately 1.5m height, facing oncoming pedestrians.
 - House the Raspberry Pi 5 and battery pack inside the weatherproof enclosure at the base or mid-section.
-- Run HDMI and power cables internally through the pole where possible to avoid exposure.
-- Ensure the camera has a clear, unobstructed view of the full crosswalk ROI.
-- Position Pole 1 and Pole 2 on opposite sides of the crosswalk, facing each other.
+- Run HDMI and power cables internally through the pole where possible.
+- Ensure the camera has a clear, unobstructed view of the full crosswalk area.
+- Position Pole 1 and Pole 2 on **opposite sides** of the crosswalk, facing each other.
 
 ---
 
 ## 3. OS Setup (Both Poles)
 
 Flash **Raspberry Pi OS with Desktop (64-bit, Bookworm)** using Raspberry Pi Imager. Desktop is required for the Pygame display.
-
-After first boot:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -86,30 +83,33 @@ Install system dependencies:
 ```bash
 sudo apt install -y git python3-pip python3-venv python3-pygame \
   libopencv-dev python3-opencv libatlas-base-dev \
-  mosquitto mosquitto-clients curl ufw
+  mosquitto mosquitto-clients curl ufw ffmpeg
 ```
 
 ---
 
 ## 4. Python Environment (Both Poles)
 
-Clone the repo and create the virtual environment:
+Clone the repo:
 
 ```bash
 cd ~
 git clone https://github.com/JyresaMae/SWiPS.git swips_project
-cd swips_project
-
-python3 -m venv swips_env
-source swips_env/bin/activate
-
-pip install --upgrade pip
-pip install ultralytics opencv-python paho-mqtt influxdb-client pygame numpy
 ```
 
-> Always activate the virtual environment before running scripts:
+Create the virtual environment at `/home/pi/swips_env` (NOT inside swips_project):
+
+```bash
+cd ~
+python3 -m venv swips_env
+source ~/swips_env/bin/activate
+pip install --upgrade pip
+pip install -r ~/swips_project/requirements.txt
+```
+
+> Always activate before running any scripts:
 > ```bash
-> source ~/swips_project/swips_env/bin/activate
+> source ~/swips_env/bin/activate
 > ```
 
 ---
@@ -119,46 +119,36 @@ pip install ultralytics opencv-python paho-mqtt influxdb-client pygame numpy
 ### 5.1 VIGI C240 Initial Configuration
 
 1. Connect the VIGI C240 to your local network via Ethernet.
-2. Download and open **VIGI Security Manager** on your laptop.
-3. Add the camera, set a username and password (e.g., `admin` / `swips2026`).
-4. Note the camera's assigned IP address (e.g., `192.168.1.100`).
+2. Open **VIGI Security Manager** on your laptop.
+3. Add the camera, set credentials (e.g., `admin` / `swips2026`).
+4. Note the camera's IP address.
 
-### 5.2 Find the RTSP URL
-
-The VIGI C240 RTSP stream URL format:
+### 5.2 RTSP URL Format
 
 ```
-rtsp://<username>:<password>@<camera-ip>/stream1     # Main stream (high res)
-rtsp://<username>:<password>@<camera-ip>/stream2     # Sub stream (lower res)
+rtsp://<username>:<password>@<camera-ip>:554/stream2
 ```
 
-Example:
+Default used in SWiPS:
 ```
-rtsp://admin:swips2026@192.168.1.100/stream1
+rtsp://admin:swips2026@192.168.1.242:554/stream2
 ```
 
-### 5.3 Test the RTSP Stream
+> Use `stream2` (sub-stream) — lower resolution, better performance on RPi5.
+
+### 5.3 Test the Stream
 
 ```bash
-# Install VLC or test with OpenCV:
+source ~/swips_env/bin/activate
 python3 -c "
 import cv2
-cap = cv2.VideoCapture('rtsp://admin:swips2026@192.168.1.100/stream1')
+cap = cv2.VideoCapture('rtsp://admin:swips2026@192.168.1.242:554/stream2')
 print('Stream opened:', cap.isOpened())
+ret, frame = cap.read()
+print('Frame shape:', frame.shape if ret else 'No frame')
 cap.release()
 "
 ```
-
-### 5.4 Set Static IP for Camera (Recommended)
-
-Assign a static IP to each camera so it doesn't change between sessions. Do this in your router's DHCP reservation settings using the camera's MAC address:
-
-| Camera | Recommended Static IP |
-|---|---|
-| Pole 1 camera | 192.168.1.101 |
-| Pole 2 camera | 192.168.1.102 |
-
-> In field (hotspot) mode, cameras connect to Pole 1's hotspot. Assign them static IPs via the hotspot DHCP config or directly on the camera.
 
 ---
 
@@ -166,55 +156,37 @@ Assign a static IP to each camera so it doesn't change between sessions. Do this
 
 ### 6.1 Connect ARZOPA Monitor
 
-Connect the ARZOPA monitor to the Raspberry Pi 5 via micro-HDMI → HDMI cable. Power the monitor via USB-C.
+Connect via micro-HDMI → HDMI. Power via USB-C.
 
-### 6.2 Set Display Resolution
+### 6.2 Set Resolution
 
 ```bash
-# Check connected displays:
-tvservice -l
-
-# Force resolution (add to /boot/firmware/config.txt):
 sudo nano /boot/firmware/config.txt
 ```
 
-Add or modify:
+Add:
 ```ini
 hdmi_group=2
-hdmi_mode=82    # 1920x1080 @ 60Hz
+hdmi_mode=82
 hdmi_drive=2
 ```
 
-Save and reboot:
+Reboot:
 ```bash
 sudo reboot
 ```
 
-### 6.3 Configure Display Environment for Pygame
-
-When running as a service (no desktop session), Pygame needs to know which display to use:
+### 6.3 Display Environment for Pygame
 
 ```bash
 export DISPLAY=:0
 export SDL_VIDEODRIVER=x11
 ```
 
-Add these to your `.bashrc` or include them in the systemd service file (see Section 13).
+Add these to your `.bashrc` or include in systemd service (see Section 13).
 
 ### 6.4 Disable Screen Blanking
 
-Prevent the display from turning off during deployment:
-
-```bash
-sudo nano /etc/lightdm/lightdm.conf
-```
-
-Under `[Seat:*]`, add:
-```ini
-xserver-command=X -s 0 -dpms
-```
-
-Or via `xset` (run after desktop starts):
 ```bash
 xset s off
 xset -dpms
@@ -225,33 +197,23 @@ xset s noblank
 
 ## 7. Firewall and Port Configuration
 
-Open the required ports on **both poles**:
-
 ```bash
 sudo ufw allow ssh
 sudo ufw allow 1883    # MQTT
+sudo ufw allow 3000    # Dashboard (Pole 1 only)
 sudo ufw allow 8086    # InfluxDB (Pole 1 only)
-sudo ufw allow 3000    # Dashboard server (Pole 1 only)
-sudo ufw allow 8554    # MJPEG stream
+sudo ufw allow 9998    # MJPEG TCP video sink (Pole 1 only)
 sudo ufw enable
 sudo ufw status
 ```
-
-> On Pole 2, you only need SSH and MQTT (1883). The rest are Pole 1 only.
 
 ---
 
 ## 8. Pole 1 Setup (Master)
 
-### 8.1 MQTT Broker (Mosquitto)
+### 8.1 MQTT Broker
 
-```bash
-sudo systemctl enable mosquitto
-sudo systemctl start mosquitto
-sudo systemctl status mosquitto
-```
-
-Allow external connections (so Pole 2 can connect):
+Allow external connections (so Pole 2 can publish):
 
 ```bash
 sudo nano /etc/mosquitto/mosquitto.conf
@@ -263,8 +225,8 @@ listener 1883 0.0.0.0
 allow_anonymous true
 ```
 
-Restart:
 ```bash
+sudo systemctl enable mosquitto
 sudo systemctl restart mosquitto
 ```
 
@@ -286,9 +248,16 @@ Initial setup (run once):
 influx setup
 # Username:     swips
 # Password:     <your password>
-# Organization: swips-org
-# Bucket:       swips
+# Organization: swips
+# Bucket:       swips-data
 # Retention:    0 (infinite)
+```
+
+Create additional buckets:
+
+```bash
+influx bucket create -n swips-alerts -o swips
+influx bucket create -n swips-system -o swips
 ```
 
 Get your API token:
@@ -297,16 +266,14 @@ Get your API token:
 influx auth list
 ```
 
-Copy the token — you will need it in the detection script.
+Copy the token — needed for `.env`.
 
-### 8.3 Node.js and Dashboard Server
-
-Install Node.js 18:
+### 8.3 Node.js 18
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
-node --version    # should be v18.x.x
+node --version    # v18.x.x
 ```
 
 Install server dependencies:
@@ -316,95 +283,102 @@ cd ~/swips_project/server
 npm install
 ```
 
-### 8.4 Configure Pole 1 Detection Script
-
-Edit the config block at the top of `pole1/swips_simple_detect.py`:
-
-```python
-POLE_ID          = "pole1"
-MQTT_BROKER      = "localhost"
-MQTT_PORT        = 1883
-INFLUX_URL       = "http://localhost:8086"
-INFLUX_TOKEN     = "<your-influxdb-token>"
-INFLUX_ORG       = "swips-org"
-INFLUX_BUCKET    = "swips"
-RTSP_URL         = "rtsp://admin:swips2026@<camera-ip>/stream1"
-MODEL_PATH       = "/home/pi/swips_project/models/best_ncnn_model"
-ROI_CONFIG       = "/home/pi/swips_project/config/roi_config_camera_dual.json"
-```
-
-### 8.5 MJPEG Bridge Service
+### 8.4 Configure Server Environment
 
 ```bash
-sudo cp ~/swips_project/services/swips-mjpeg.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable swips-mjpeg
-sudo systemctl start swips-mjpeg
-sudo systemctl status swips-mjpeg
+cp ~/swips_project/server/.env.example ~/swips_project/server/.env
+nano ~/swips_project/server/.env
+```
+
+Fill in your real InfluxDB token:
+
+```env
+INFLUX_URL=http://localhost:8086
+INFLUX_TOKEN=<paste-your-token-here>
+INFLUX_ORG=swips
+INFLUX_BUCKET=swips-data
+INFLUX_BUCKET_ALERTS=swips-alerts
+INFLUX_BUCKET_SYSTEM=swips-system
+MQTT_URL=mqtt://localhost:1883
+API_PORT=3000
+```
+
+### 8.5 Configure Detection Script (Environment Variables)
+
+The detection script reads config from environment variables. Set them before running:
+
+```bash
+export SWIPS_RTSP="rtsp://admin:swips2026@<camera-ip>:554/stream2"
+export SWIPS_POLE="pole-1"
+export SWIPS_LOCATION="msu-iit-crosswalk"
+```
+
+Or add them to your `.bashrc` for persistence:
+
+```bash
+echo 'export SWIPS_RTSP="rtsp://admin:swips2026@<camera-ip>:554/stream2"' >> ~/.bashrc
+echo 'export SWIPS_POLE="pole-1"' >> ~/.bashrc
+echo 'export SWIPS_LOCATION="msu-iit-crosswalk"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ---
 
 ## 9. Pole 2 Setup (Client)
 
-Edit the config block at the top of `pole2/swips_simple_detect.py`:
+Install Python environment same as Section 4.
 
-```python
-POLE_ID          = "pole2"
-MQTT_BROKER      = "10.42.0.1"    # Pole 1 IP in hotspot mode
-MQTT_PORT        = 1883
-RTSP_URL         = "rtsp://admin:swips2026@<camera-ip>/stream1"
-MODEL_PATH       = "/home/pi/swips_project/models/best_ncnn_model"
-ROI_CONFIG       = "/home/pi/swips_project/config/roi_config_camera_dual.json"
+Set environment variables pointing to **Pole 1's IP**:
+
+```bash
+export SWIPS_RTSP="rtsp://admin:swips2026@<pole2-camera-ip>:554/stream2"
+export SWIPS_POLE="pole-2"
+export SWIPS_LOCATION="msu-iit-crosswalk"
 ```
 
 > No InfluxDB, Node.js, or Mosquitto needed on Pole 2.
+
+The detection script on Pole 2 publishes MQTT to Pole 1. Make sure `MQTT_URL` in the script points to Pole 1:
+- Field mode: `10.42.0.1`
+- Lab mode: `10.10.79.159`
 
 ---
 
 ## 10. ROI Calibration (Both Poles)
 
-**This step is required before first use.** The ROI (Region of Interest) defines the crosswalk detection zone in the camera frame. Without calibration, the system will not detect correctly.
-
-Run the calibrator on each pole separately:
+**Required before first use.** The ROI defines the crosswalk detection zone in the camera frame.
 
 ```bash
-source ~/swips_project/swips_env/bin/activate
+source ~/swips_env/bin/activate
 cd ~/swips_project/pole1    # or pole2 on Pole 2
 python roi_calibrator.py
 ```
 
-### How to calibrate:
+### How to calibrate
 
-1. A live camera feed window will open.
-2. Click to draw the ROI polygon around the crosswalk area in the frame.
-3. Press **Enter** to confirm the ROI.
-4. The calibrator saves the coordinates to `config/roi_config_camera_dual.json`.
+1. A live camera feed window opens.
+2. Click to draw 4 polygon points around the crosswalk in the frame.
+3. Press **Enter** to confirm.
+4. Saved to `config/roi_config_camera_dual.json`.
 
-### Understanding `roi_config_camera_dual.json`
+### Config format
 
 ```json
 {
-  "pole1": {
-    "roi_points": [[x1,y1], [x2,y2], [x3,y3], [x4,y4]],
-    "frame_width": 1920,
-    "frame_height": 1080
-  },
-  "pole2": {
-    "roi_points": [[x1,y1], [x2,y2], [x3,y3], [x4,y4]],
-    "frame_width": 1920,
-    "frame_height": 1080
-  }
+  "video": "LIVE_CAMERA",
+  "crosswalk_roi": [[266,119],[41,334],[729,365],[573,128]],
+  "sidewalk_left_roi": [[0,0],[0,1],[1,1],[1,0]],
+  "sidewalk_right_roi": [[0,0],[0,1],[1,1],[1,0]]
 }
 ```
 
 | Field | Description |
 |---|---|
-| `roi_points` | Polygon vertices defining the crosswalk detection zone |
-| `frame_width` | Camera stream resolution (width) |
-| `frame_height` | Camera stream resolution (height) |
+| `crosswalk_roi` | 4 polygon points (x,y) defining the crosswalk detection zone |
+| `sidewalk_left_roi` | Left sidewalk ROI (set to dummy values if unused) |
+| `sidewalk_right_roi` | Right sidewalk ROI (set to dummy values if unused) |
 
-> Re-run calibration if the camera is physically moved or the deployment site changes.
+> Re-calibrate if the camera is physically moved or the site changes.
 
 ---
 
@@ -418,7 +392,7 @@ sudo nmcli connection add type wifi ifname wlan0 con-name "SWiPS-Hotspot" autoco
   wifi-sec.psk "swips2026" ipv4.method shared ipv4.address 10.42.0.1/24
 ```
 
-### 11.2 Create Pole 2 Connection to Hotspot (one-time)
+### 11.2 Create Pole 2 → Hotspot Connection (one-time)
 
 ```bash
 sudo nmcli connection add type wifi ifname wlan0 con-name "SWiPS-Pole1-Link" \
@@ -426,20 +400,18 @@ sudo nmcli connection add type wifi ifname wlan0 con-name "SWiPS-Pole1-Link" \
   ipv4.method auto
 ```
 
-### 11.3 Activate Field Mode
-
-Run in this exact order:
+### 11.3 Activate Field Mode (in this order)
 
 ```bash
 # Step 1 — On Pole 1:
 sudo nmcli connection up "SWiPS-Hotspot"
-# SSH drops. Reconnect via hotspot at 10.42.0.1
+# SSH drops. Reconnect via hotspot: ssh pi@10.42.0.1
 
 # Step 2 — On Pole 2:
 sudo nmcli device wifi rescan
 sleep 5
 sudo nmcli connection up "SWiPS-Pole1-Link"
-# SSH drops. Reconnect via hotspot at 10.42.0.2
+# SSH drops. Reconnect: ssh pi@10.42.0.2
 
 # Step 3 — Connect laptop WiFi to SWiPS-Pole-01 (password: swips2026)
 ```
@@ -456,7 +428,7 @@ sudo nmcli connection up "MSCA"
 
 ### 11.5 IP Reference
 
-| Device | Field (Hotspot) | Lab (MSCA) |
+| Device | Field (Hotspot) | Lab |
 |---|---|---|
 | Pole 1 | 10.42.0.1 | 10.10.79.159 |
 | Pole 2 | 10.42.0.2 | 10.10.79.136 |
@@ -471,11 +443,11 @@ Start in this exact order:
 
 ```bash
 # Terminal 1 — Detection loop
-source ~/swips_project/swips_env/bin/activate
+source ~/swips_env/bin/activate
 cd ~/swips_project/pole1
 python swips_simple_detect.py
 
-# Terminal 2 — Dashboard server
+# Terminal 2 — Dashboard + API server
 cd ~/swips_project/server
 node server.js
 ```
@@ -483,18 +455,17 @@ node server.js
 **On Pole 2:**
 
 ```bash
-source ~/swips_project/swips_env/bin/activate
+source ~/swips_env/bin/activate
 cd ~/swips_project/pole2
 python swips_simple_detect.py
 ```
 
 Expected output on Pole 1:
 ```
-[SWiPS] Model loaded: best_ncnn_model
-[SWiPS] MQTT connected to localhost:1883
-[SWiPS] InfluxDB connected
-[SWiPS] Stream opened: rtsp://...
-[SWiPS] FSM state: IDLE
+[MQTT] Connected to local broker
+[SWiPS] Model loaded
+[SWiPS] Stream opened
+[SWiPS] FSM → IDLE
 ```
 
 ---
@@ -514,8 +485,11 @@ After=network.target mosquitto.service influxdb.service graphical.target
 User=pi
 Environment=DISPLAY=:0
 Environment=SDL_VIDEODRIVER=x11
+Environment=SWIPS_RTSP=rtsp://admin:swips2026@192.168.1.242:554/stream2
+Environment=SWIPS_POLE=pole-1
+Environment=SWIPS_LOCATION=msu-iit-crosswalk
 WorkingDirectory=/home/pi/swips_project/pole1
-ExecStart=/home/pi/swips_project/swips_env/bin/python swips_simple_detect.py
+ExecStart=/home/pi/swips_env/bin/python swips_simple_detect.py
 Restart=always
 RestartSec=5
 
@@ -530,7 +504,7 @@ Create `/etc/systemd/system/swips-server.service`:
 ```ini
 [Unit]
 Description=SWiPS Dashboard Server
-After=network.target influxdb.service
+After=network.target influxdb.service mosquitto.service
 
 [Service]
 User=pi
@@ -556,8 +530,11 @@ After=network.target graphical.target
 User=pi
 Environment=DISPLAY=:0
 Environment=SDL_VIDEODRIVER=x11
+Environment=SWIPS_RTSP=rtsp://admin:swips2026@<pole2-camera-ip>:554/stream2
+Environment=SWIPS_POLE=pole-2
+Environment=SWIPS_LOCATION=msu-iit-crosswalk
 WorkingDirectory=/home/pi/swips_project/pole2
-ExecStart=/home/pi/swips_project/swips_env/bin/python swips_simple_detect.py
+ExecStart=/home/pi/swips_env/bin/python swips_simple_detect.py
 Restart=always
 RestartSec=5
 
@@ -585,7 +562,7 @@ sudo systemctl start swips-detect
 
 ## 14. Accessing the Dashboard
 
-| Mode | WiFi Network | Password | Dashboard URL |
+| Mode | WiFi | Password | URL |
 |---|---|---|---|
 | Field | SWiPS-Pole-01 | swips2026 | http://10.42.0.1:3000 |
 | Lab | MSCA | — | http://10.10.79.159:3000 |
@@ -595,46 +572,48 @@ sudo systemctl start swips-detect
 | Tab | Description |
 |---|---|
 | Dashboard | Live FSM state (IDLE / CROSSING / OBSTRUCTION) for both poles |
-| Live Cam | MJPEG video feeds from Pole 1 and Pole 2 |
-| Analytics | State transition history and detection counts over time |
-| Performance | Latency (ms), FPS, inference time per frame |
-| Compliance | Detection rate and system uptime |
-| Alerts | Logged OBSTRUCTION and CROSSING events with timestamps |
-| Map | Deployment site map (MSU-IIT crosswalk locations) |
+| Live Cam | MJPEG video feeds (TCP stream via port 9998) |
+| Analytics | State transition history, detection counts |
+| Performance | Latency (ms), FPS, CPU/memory usage |
+| Compliance | Detection rate and uptime |
+| Alerts | OBSTRUCTION and CROSSING events with timestamps |
+| Map | MSU-IIT crosswalk deployment map |
 
 ---
 
 ## 15. Pre-Deployment Checklist
 
-Run through this before going to the field:
-
 ```
 Hardware
 [ ] Both RPi5 units powered and booted
 [ ] Both ARZOPA monitors connected and displaying
-[ ] Both VIGI C240 cameras mounted and streaming (test RTSP)
+[ ] Both VIGI C240 cameras mounted and RTSP stream confirmed
 [ ] Battery packs fully charged
-[ ] All cables secured inside pole housing
 
-Software
-[ ] swips_env activated and dependencies installed on both poles
-[ ] InfluxDB running and token configured (Pole 1)
-[ ] Mosquitto running (Pole 1)
-[ ] ROI calibration done for both poles (roi_config_camera_dual.json updated)
-[ ] RTSP URLs correct and streams opening without error
-[ ] MQTT_BROKER in Pole 2 set to 10.42.0.1
+Software - Pole 1
+[ ] swips_env activated, dependencies installed
+[ ] InfluxDB running, 3 buckets created (swips-data, swips-alerts, swips-system)
+[ ] Mosquitto running with external connections allowed
+[ ] server/.env filled in with real InfluxDB token
+[ ] SWIPS_RTSP, SWIPS_POLE, SWIPS_LOCATION environment variables set
+[ ] ROI calibration done, roi_config_camera_dual.json updated
+
+Software - Pole 2
+[ ] swips_env activated, dependencies installed
+[ ] SWIPS_RTSP, SWIPS_POLE, SWIPS_LOCATION environment variables set
+[ ] ROI calibration done
 
 Network
-[ ] SWiPS-Hotspot connection profile exists on Pole 1
-[ ] SWiPS-Pole1-Link connection profile exists on Pole 2
-[ ] Tested: Pole 1 hotspot up → Pole 2 joins → laptop connects → dashboard loads
-[ ] Tested: Both poles SSH accessible at 10.42.0.1 and 10.42.0.2
+[ ] SWiPS-Hotspot profile exists on Pole 1
+[ ] SWiPS-Pole1-Link profile exists on Pole 2
+[ ] Tested full sequence: hotspot up → Pole 2 joins → laptop connects → dashboard loads
 
-Final Check
-[ ] Detection running on both poles (FSM state showing in dashboard)
-[ ] MQTT messages flowing (mosquitto_sub -t "swips/#" shows state transitions)
-[ ] InfluxDB logging (check Analytics tab for incoming data)
+Final Verification
+[ ] Both detection scripts running, FSM states showing in dashboard
+[ ] MQTT messages flowing: mosquitto_sub -t "swips/#" -v
+[ ] InfluxDB logging: check Analytics tab
 [ ] MJPEG streams showing in Live Cam tab
+[ ] OBSTRUCTION timer tested (hold >30s → red flash triggered)
 ```
 
 ---
@@ -646,11 +625,16 @@ Final Check
 sudo nmcli device wifi rescan && sleep 5 && sudo nmcli connection up "SWiPS-Pole1-Link"
 ```
 
-**MQTT not receiving messages from Pole 2:**
+**RTSP stream not opening:**
 ```bash
-# On Pole 1, monitor all topics:
-mosquitto_sub -h localhost -t "swips/#" -v
+python3 -c "import cv2; cap=cv2.VideoCapture('rtsp://admin:swips2026@<ip>:554/stream2'); print(cap.isOpened())"
+ping <camera-ip>
+```
 
+**MQTT not receiving from Pole 2:**
+```bash
+# On Pole 1:
+mosquitto_sub -h localhost -t "swips/#" -v
 # Verify Pole 2 can reach Pole 1:
 ping 10.42.0.1
 ```
@@ -659,15 +643,12 @@ ping 10.42.0.1
 ```bash
 sudo systemctl restart influxdb
 sudo systemctl status influxdb
-# Check token is correct in swips_simple_detect.py
 ```
 
-**RTSP stream not opening:**
+**Dashboard not loading:**
 ```bash
-# Test stream directly:
-python3 -c "import cv2; cap=cv2.VideoCapture('rtsp://...'); print(cap.isOpened())"
-# Check camera IP is reachable:
-ping <camera-ip>
+sudo systemctl status swips-server
+cd ~/swips_project/server && node server.js    # run manually to see errors
 ```
 
 **Pygame display not showing:**
@@ -677,7 +658,7 @@ export SDL_VIDEODRIVER=x11
 python display_controller.py
 ```
 
-**Check service logs:**
+**Check all service logs:**
 ```bash
 sudo journalctl -u swips-detect -f
 sudo journalctl -u swips-server -f
@@ -686,8 +667,6 @@ sudo journalctl -u swips-mjpeg -f
 
 **ROI not detecting correctly:**
 ```bash
-# Re-run calibration:
 python roi_calibrator.py
-# Verify saved config:
 cat ~/swips_project/config/roi_config_camera_dual.json
 ```
