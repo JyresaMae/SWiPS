@@ -110,41 +110,45 @@ sudo apt install -y mosquitto mosquitto-clients
 
 ### Configuration
 
-Edit the MQTT and InfluxDB settings in `pole1/swips_simple_detect.py` and `pole2/swips_simple_detect.py`:
+Config is via environment variables. Set these before running:
 
-```python
-MQTT_BROKER = "10.42.0.1"   # Pole 1 IP (hotspot mode)
-INFLUX_URL  = "http://localhost:8086"
-INFLUX_TOKEN = "<your-token>"
-INFLUX_ORG   = "<your-org>"
-INFLUX_BUCKET = "swips"
+```bash
+export SWIPS_RTSP="rtsp://admin:<password>@<camera-ip>:554/stream2"
+export SWIPS_POLE="pole-1"          # or "pole-2" on Pole 2
+export SWIPS_LOCATION="msu-iit-crosswalk"
 ```
 
-### Network Setup
+Copy and fill in the server config:
+```bash
+cp server/.env.example server/.env
+nano server/.env    # paste your InfluxDB token
+```
 
-| Mode | Pole 1 IP | Pole 2 IP | Dashboard |
-|---|---|---|---|
-| Field (hotspot) | 10.42.0.1 | 10.42.0.2 | http://10.42.0.1:3000 |
-| Lab (MSCA) | 10.10.79.159 | 10.10.79.136 | http://10.10.79.159:3000 |
+See [SETUP.md](SETUP.md) for full configuration details.
+
+### Network Setup
+...
 
 ### Running the System
 
 **On Pole 1:**
 ```bash
-cd ~/swips_project
-python swips_simple_detect.py
-```
-
-**On Pole 2:**
-```bash
-cd ~/swips_project
+source ~/swips_env/bin/activate
+cd ~/SWiPS/pole1
 python swips_simple_detect.py
 ```
 
 **Dashboard server (Pole 1):**
 ```bash
-cd ~/swips-server
+cd ~/SWiPS/server
 node server.js
+```
+
+**On Pole 2:**
+```bash
+source ~/swips_env/bin/activate
+cd ~/SWiPS/pole2
+python swips_simple_detect.py
 ```
 
 ---
