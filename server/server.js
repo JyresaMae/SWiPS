@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve dashboard static files
-app.use(express.static(path.join(__dirname, '..', 'swips-dashboard')));
+app.use(express.static(path.join(__dirname, '..', 'dashboard')));
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
@@ -629,10 +629,10 @@ app.get('/api/alerts/live', (req, res) => {
   });
 });
 
-app.use('/snapshots', express.static('/home/pi/swips_project/snapshots'));
+app.use('/snapshots', express.static(path.join(__dirname, '..', 'snapshots')));
 
 app.get('/{*splat}', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'swips-dashboard', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'dashboard', 'index.html'));
 });
 
 // ─── Video Stream Relay (RAW TCP — not HTTP) ───────────────
