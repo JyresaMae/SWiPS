@@ -20,9 +20,17 @@ The detection script's three-state output (IDLE / CROSSING / OBSTRUCTION)
 maps directly to these display states. Any unrecognized mode falls
 back to IDLE.
 
+IDLE->CROSSING is held for READY_WINDOW_SECONDS before the display
+actually flips to CROSS NOW, kept in sync with the tower light's own
+YELLOW ready window in vehicle_led_controller.py (same env var name —
+change both together or they'll drift out of sync).
+
 Stale-data safety: if no MQTT message arrives for STALE_TIMEOUT_S
 seconds, we revert to IDLE so the display never shows green when
-the detector has crashed.
+the detector has crashed. This freshness clock is refreshed on every
+valid MQTT message via state.touch(), independent of whether the
+committed mode actually changed — otherwise a long CROSSING with
+repeated identical messages goes "stale" and wrongly reverts.
 
 Run as root:
     sudo python3 display_controller.py
@@ -62,15 +70,13 @@ FLASH_HZ        = 2          # OBSTRUCTION flash rate
 FPS_CAP         = 10         # render loop cap
 STALE_TIMEOUT_S = 3.0        # if no MQTT in this long, force IDLE
 FONT_NAME       = None       # None = pygame default
+READY_WINDOW_SECONDS = float(os.environ.get("SWIPS_READY_WINDOW_SECONDS", 1.2))
 
 # Brightness scaling (multiplicative on RGB)
 RED_BRIGHTNESS    = 0.60     # OBSTRUCTION: red @ 60%
 GREEN_BRIGHTNESS  = 1.00     # CROSSING:    green @ 100%
 
 # ── Force KMSDRM (headless Pi 5, no X server) ─────────────────────
-# Pole 1 uses HDMI-A-2 (index 1). Pole 2 may use a different index;
-# override via env var if needed:
-#   sudo SDL_VIDEO_KMSDRM_DEVICE_INDEX=0 python3 display_controller.py
 os.environ.setdefault("SDL_VIDEODRIVER", "kmsdrm")
 os.environ.setdefault("SDL_VIDEO_KMSDRM_DEVICE_INDEX", "1")
 
@@ -98,6 +104,13 @@ class DisplayState:
             self.mode = mode
             self.last_update = time.time()
 
+    def touch(self):
+        """Refresh the freshness clock without changing mode — keeps the
+        stale-data safety net accurate even when a repeated message is
+        deduped below and doesn't call update()."""
+        with self.lock:
+            self.last_update = time.time()
+
     def get(self):
         with self.lock:
             age = time.time() - self.last_update if self.last_update > 0 else float("inf")
@@ -107,10 +120,20 @@ class DisplayState:
 state = DisplayState()
 running = True
 
-# Pre-rendered frame cache. Populated on first render of each state and
-# reused every loop iteration so we're not re-rasterizing 280pt fonts
-# at 30 FPS, which Pi 5 software-SDL can't keep up with.
 _frame_cache = {}
+
+# ── Ready-window gating (IDLE -> CROSSING only) ────────────────────
+last_committed_mode = "IDLE"
+pending_timer = None
+timer_lock = threading.Lock()
+
+
+def _commit_crossing():
+    global pending_timer, last_committed_mode
+    with timer_lock:
+        pending_timer = None
+        last_committed_mode = "CROSSING"
+    state.update("CROSSING")
 
 
 # ── MQTT callbacks ────────────────────────────────────────────────
@@ -124,25 +147,44 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, userdata, msg):
+    global last_committed_mode, pending_timer
     try:
         data = json.loads(msg.payload.decode())
         raw = str(data.get("mode", "IDLE")).upper()
-        # Normalize legacy variants — current detection only emits the
-        # canonical three, but old scripts emitted CROSSING_1_4 etc.
         if raw.startswith("CROSSING"):
             mode = "CROSSING"
         elif raw == "OBSTRUCTION":
             mode = "OBSTRUCTION"
         else:
             mode = "IDLE"
-        state.update(mode)
     except (json.JSONDecodeError, UnicodeDecodeError, AttributeError) as e:
         print(f"[MQTT] Bad message: {e}")
+        return
+
+    state.touch()  # every valid message proves MQTT is alive
+
+    with timer_lock:
+        if mode == "CROSSING" and last_committed_mode == "IDLE":
+            if pending_timer is None:
+                pending_timer = threading.Timer(READY_WINDOW_SECONDS, _commit_crossing)
+                pending_timer.daemon = True
+                pending_timer.start()
+            return
+
+        if pending_timer is not None:
+            pending_timer.cancel()
+            pending_timer = None
+
+        if mode == last_committed_mode:
+            return
+
+        last_committed_mode = mode
+
+    state.update(mode)
 
 
 # ── Render functions ──────────────────────────────────────────────
 def render_idle(screen, W, H, logo, fonts):
-    """IDLE: black background, centered SWiPS logo, 'SYSTEM MONITORING' below."""
     cached = _frame_cache.get("idle")
     if cached is None:
         frame = pygame.Surface((W, H))
@@ -164,7 +206,6 @@ def render_idle(screen, W, H, logo, fonts):
     screen.blit(cached, (0, 0))
 
 def render_crossing(screen, W, H, fonts):
-    """CROSSING: solid green, 'CROSS NOW' centered. Cached."""
     cached = _frame_cache.get("crossing")
     if cached is None:
         frame = pygame.Surface((W, H))
@@ -173,23 +214,15 @@ def render_crossing(screen, W, H, fonts):
         _frame_cache["crossing"] = frame
         cached = frame
         print("[DISPLAY] Cached CROSSING frame")
-
     screen.blit(cached, (0, 0))
 
 
 def render_obstruction(screen, W, H, fonts, on_phase):
-    """OBSTRUCTION: display unchanged — monitor stays on CROSS NOW.
-    Dashboard alert and snapshot logic in server.js handles this state.
-    """
     pass  # intentionally blank — monitor stays on previous state
 
 
 def _draw_two_word_label(surface, W, H, fonts, line1_text, line2_text, color):
-    """Render two stacked lines onto `surface`, auto-shrinking each to fit width.
-
-    Called only when building a cached frame — not per render loop iteration.
-    """
-    margin = 20  # px from each side
+    margin = 20
     max_w = W - 2 * margin
 
     line1 = fonts["mega"].render(line1_text, True, color)
@@ -234,8 +267,6 @@ def main():
     pygame.mouse.set_visible(False)
     clock = pygame.time.Clock()
 
-    # Fonts. mega is for the two-word state labels; auto-scales down
-    # if too wide for the screen.
     fonts = {
         "mega":   pygame.font.Font(FONT_NAME, 360),
         "large":  pygame.font.Font(FONT_NAME, 96),
@@ -243,7 +274,6 @@ def main():
         "small":  pygame.font.Font(FONT_NAME, 36),
     }
 
-    # Load logo with text fallback
     logo = None
     if os.path.exists(LOGO_PATH):
         try:
@@ -260,7 +290,6 @@ def main():
     else:
         print(f"[DISPLAY] Logo not found at {LOGO_PATH} — text fallback")
 
-    # MQTT
     print("[MQTT] Connecting...")
     mc = mqtt.Client(client_id=MQTT_CLIENT_ID)
     mc.on_connect = on_connect
@@ -278,7 +307,6 @@ def main():
 
     try:
         while running:
-            # Pump pygame events so the OS doesn't think we've hung
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -287,7 +315,6 @@ def main():
 
             mode, age = state.get()
 
-            # Stale-data safety: revert to IDLE if no MQTT for too long
             if age > STALE_TIMEOUT_S and mode != "IDLE":
                 if prev_logged_mode != "IDLE_STALE":
                     print(f"[DISPLAY] No MQTT for {age:.1f}s — forcing IDLE")
@@ -300,11 +327,9 @@ def main():
                 print(f"[DISPLAY] State -> {effective_mode}")
                 prev_logged_mode = effective_mode
 
-            # Render based on effective state
             if effective_mode == "CROSSING":
                 render_crossing(screen, W, H, fonts)
             elif effective_mode == "OBSTRUCTION":
-                # 2 Hz flash → on-phase for first half of each cycle
                 cycle = 1.0 / FLASH_HZ
                 on_phase = (time.time() % cycle) < (cycle / 2)
                 render_obstruction(screen, W, H, fonts, on_phase)
@@ -315,7 +340,6 @@ def main():
             clock.tick(FPS_CAP)
             frame_count += 1
 
-            # Heartbeat every ~2s so we can see the loop is alive and what it's drawing
             now = time.time()
             if now - last_debug_log >= 2.0:
                 print(f"[DEBUG] frame={frame_count} mode={effective_mode} "
@@ -324,6 +348,11 @@ def main():
 
     finally:
         print("[DISPLAY] Shutting down...")
+        global pending_timer
+        with timer_lock:
+            if pending_timer is not None:
+                pending_timer.cancel()
+                pending_timer = None
         try:
             mc.loop_stop()
             mc.disconnect()
