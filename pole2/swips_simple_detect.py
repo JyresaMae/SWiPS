@@ -47,7 +47,7 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 # ══════════════════════════════════════════════════════════════
 # CONFIG
 # ══════════════════════════════════════════════════════════════
-RTSP        = os.environ.get("SWIPS_RTSP", "rtsp://admin:swips2026@192.168.0.60:554/stream2")
+RTSP        = os.environ.get("SWIPS_RTSP", "rtsp://admin:CHANGE_ME@192.168.0.60:554/stream2")
 POLE_ID     = os.environ.get("SWIPS_POLE", "pole-1")
 POLE_LOC    = os.environ.get("SWIPS_LOCATION", "msu-iit-crosswalk")
 W, H        = 736, 416     # native RTSP stream resolution (no upscaling)

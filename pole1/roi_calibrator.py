@@ -9,7 +9,7 @@ import cv2, os, json, time, numpy as np
 
 app = Flask(__name__)
 
-RTSP = os.environ.get("SWIPS_RTSP", "rtsp://admin:swips2026@192.168.0.60:554/stream2")
+RTSP = os.environ.get("SWIPS_RTSP", "rtsp://admin:CHANGE_ME@192.168.0.60:554/stream2")
 ROI_CONFIG = os.environ.get("SWIPS_ROI_CONFIG", "/home/pi/swips_project/roi_config_camera_dual.json")
 
 def grab_frame():

@@ -4,7 +4,7 @@ import cv2, os, time, threading, json
 import numpy as np
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-RTSP = "rtsp://admin:swips2026@192.168.1.242:554/stream1"
+RTSP = "rtsp://admin:CHANGE_ME@192.168.1.242:554/stream1"
 PORT = 9997
 ROI_PATH = "/home/pi/swips_project/roi_config_camera_dual.json"
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"

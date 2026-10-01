@@ -120,7 +120,7 @@ pip install -r ~/swips_project/requirements.txt
 
 1. Connect the VIGI C240 to your local network via Ethernet.
 2. Open **VIGI Security Manager** on your laptop.
-3. Add the camera, set credentials (e.g., `admin` / `swips2026`).
+3. Add the camera, set credentials (e.g., `admin` / `CHANGE_ME`).
 4. Note the camera's IP address.
 
 ### 5.2 RTSP URL Format
@@ -131,7 +131,7 @@ rtsp://<username>:<password>@<camera-ip>:554/stream2
 
 Default used in SWiPS:
 ```
-rtsp://admin:swips2026@192.168.1.242:554/stream2
+rtsp://admin:CHANGE_ME@192.168.1.242:554/stream2
 ```
 
 > Use `stream2` (sub-stream) — lower resolution, better performance on RPi5.
@@ -142,7 +142,7 @@ rtsp://admin:swips2026@192.168.1.242:554/stream2
 source ~/swips_env/bin/activate
 python3 -c "
 import cv2
-cap = cv2.VideoCapture('rtsp://admin:swips2026@192.168.1.242:554/stream2')
+cap = cv2.VideoCapture('rtsp://admin:CHANGE_ME@192.168.1.242:554/stream2')
 print('Stream opened:', cap.isOpened())
 ret, frame = cap.read()
 print('Frame shape:', frame.shape if ret else 'No frame')
@@ -308,7 +308,7 @@ API_PORT=3000
 The detection script reads config from environment variables. Set them before running:
 
 ```bash
-export SWIPS_RTSP="rtsp://admin:swips2026@<camera-ip>:554/stream2"
+export SWIPS_RTSP="rtsp://admin:CHANGE_ME@<camera-ip>:554/stream2"
 export SWIPS_POLE="pole-1"
 export SWIPS_LOCATION="msu-iit-crosswalk"
 ```
@@ -316,7 +316,7 @@ export SWIPS_LOCATION="msu-iit-crosswalk"
 Or add them to your `.bashrc` for persistence:
 
 ```bash
-echo 'export SWIPS_RTSP="rtsp://admin:swips2026@<camera-ip>:554/stream2"' >> ~/.bashrc
+echo 'export SWIPS_RTSP="rtsp://admin:CHANGE_ME@<camera-ip>:554/stream2"' >> ~/.bashrc
 echo 'export SWIPS_POLE="pole-1"' >> ~/.bashrc
 echo 'export SWIPS_LOCATION="msu-iit-crosswalk"' >> ~/.bashrc
 source ~/.bashrc
@@ -331,7 +331,7 @@ Install Python environment same as Section 4.
 Set environment variables pointing to **Pole 1's IP**:
 
 ```bash
-export SWIPS_RTSP="rtsp://admin:swips2026@<pole2-camera-ip>:554/stream2"
+export SWIPS_RTSP="rtsp://admin:CHANGE_ME@<pole2-camera-ip>:554/stream2"
 export SWIPS_POLE="pole-2"
 export SWIPS_LOCATION="msu-iit-crosswalk"
 ```
@@ -389,14 +389,14 @@ python roi_calibrator.py
 ```bash
 sudo nmcli connection add type wifi ifname wlan0 con-name "SWiPS-Hotspot" autoconnect no \
   wifi.mode ap wifi.ssid "SWiPS-Pole-01" wifi-sec.key-mgmt wpa-psk \
-  wifi-sec.psk "swips2026" ipv4.method shared ipv4.address 10.42.0.1/24
+  wifi-sec.psk "CHANGE_ME" ipv4.method shared ipv4.address 10.42.0.1/24
 ```
 
 ### 11.2 Create Pole 2 → Hotspot Connection (one-time)
 
 ```bash
 sudo nmcli connection add type wifi ifname wlan0 con-name "SWiPS-Pole1-Link" \
-  wifi.ssid "SWiPS-Pole-01" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "swips2026" \
+  wifi.ssid "SWiPS-Pole-01" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "CHANGE_ME" \
   ipv4.method auto
 ```
 
@@ -413,7 +413,7 @@ sleep 5
 sudo nmcli connection up "SWiPS-Pole1-Link"
 # SSH drops. Reconnect: ssh pi@10.42.0.2
 
-# Step 3 — Connect laptop WiFi to SWiPS-Pole-01 (password: swips2026)
+# Step 3 — Connect laptop WiFi to SWiPS-Pole-01 (password: CHANGE_ME)
 ```
 
 ### 11.4 Switch Back to Lab Network
@@ -485,7 +485,7 @@ After=network.target mosquitto.service influxdb.service graphical.target
 User=pi
 Environment=DISPLAY=:0
 Environment=SDL_VIDEODRIVER=x11
-Environment=SWIPS_RTSP=rtsp://admin:swips2026@192.168.1.242:554/stream2
+Environment=SWIPS_RTSP=rtsp://admin:CHANGE_ME@192.168.1.242:554/stream2
 Environment=SWIPS_POLE=pole-1
 Environment=SWIPS_LOCATION=msu-iit-crosswalk
 WorkingDirectory=/home/pi/swips_project/pole1
@@ -530,7 +530,7 @@ After=network.target graphical.target
 User=pi
 Environment=DISPLAY=:0
 Environment=SDL_VIDEODRIVER=x11
-Environment=SWIPS_RTSP=rtsp://admin:swips2026@<pole2-camera-ip>:554/stream2
+Environment=SWIPS_RTSP=rtsp://admin:CHANGE_ME@<pole2-camera-ip>:554/stream2
 Environment=SWIPS_POLE=pole-2
 Environment=SWIPS_LOCATION=msu-iit-crosswalk
 WorkingDirectory=/home/pi/swips_project/pole2
@@ -564,7 +564,7 @@ sudo systemctl start swips-detect
 
 | Mode | WiFi | Password | URL |
 |---|---|---|---|
-| Field | SWiPS-Pole-01 | swips2026 | http://10.42.0.1:3000 |
+| Field | SWiPS-Pole-01 | CHANGE_ME | http://10.42.0.1:3000 |
 | Lab | MSCA | — | http://10.10.79.159:3000 |
 
 **Dashboard tabs:**
@@ -627,7 +627,7 @@ sudo nmcli device wifi rescan && sleep 5 && sudo nmcli connection up "SWiPS-Pole
 
 **RTSP stream not opening:**
 ```bash
-python3 -c "import cv2; cap=cv2.VideoCapture('rtsp://admin:swips2026@<ip>:554/stream2'); print(cap.isOpened())"
+python3 -c "import cv2; cap=cv2.VideoCapture('rtsp://admin:CHANGE_ME@<ip>:554/stream2'); print(cap.isOpened())"
 ping <camera-ip>
 ```
 
